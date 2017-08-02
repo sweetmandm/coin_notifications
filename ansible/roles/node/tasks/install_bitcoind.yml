@@ -1,0 +1,8 @@
+---
+- apt_repository:
+    repo: 'ppa:bitcoin/bitcoin'
+
+- name: Install bitcoind
+  apt:
+    name: bitcoind
+    update_cache: yes
