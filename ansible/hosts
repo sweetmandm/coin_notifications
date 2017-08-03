@@ -1,5 +1,5 @@
 [vagrant]
-192.168.50.8 git_branch=master
+192.168.50.8 git_branch=master btc_data=.bitcoin zmq_addr=127.0.0.1 zmq_port=28332 btc_net=-testnet
 
 [dev:children]
 vagrant

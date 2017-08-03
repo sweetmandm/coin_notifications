@@ -1,8 +1,24 @@
 ---
 - apt_repository:
-    repo: 'ppa:bitcoin/bitcoin'
+  repo: 'ppa:bitcoin/bitcoin'
 
 - name: Install bitcoind
   apt:
     name: bitcoind
     update_cache: yes
+
+- name: Register bitcoind init script
+  template:
+    src: bitcoind.j2
+    dest: /etc/init.d/bitcoind
+    mode: u=rwx,g=r,o=r
+
+- name: Register with monit
+  template: src=bitcoind.monit.j2
+            dest=/etc/monit/conf.d/bitcoind
+            mode=u=rw,g=r,o=r
+  register: bitcoind_monit_config
+
+- name: Reload Monit
+  command: bash -lc "monit reload"
+  when: bitcoind_monit_config.changed

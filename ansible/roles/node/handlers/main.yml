@@ -1,0 +1,3 @@
+---
+- name: Restart bitcoind
+  command: bash -lc "sudo monit restart bitcoind"

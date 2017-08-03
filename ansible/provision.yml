@@ -5,6 +5,7 @@
   roles:
     - common
     - deployer_user
+    - install_monit
     - git_checkout
 
 - name: Apply bitcoin node configuration

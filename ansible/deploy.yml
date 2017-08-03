@@ -1,0 +1,15 @@
+---
+- name: Checkout latest
+  hosts:
+    - nodes
+    - dev
+  roles:
+    - git_checkout
+
+- name: Start bitcoind
+  hosts:
+    - nodes
+    - dev
+  remote_user: root
+  roles:
+    - monit_activate
