@@ -2,4 +2,4 @@
 .bitcoin
 .vagrant
 *.log
-ansible/playbook.retry
+ansible/*.retry

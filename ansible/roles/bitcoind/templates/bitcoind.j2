@@ -1,4 +1,4 @@
-#!/sbin/runscript
+#!/bin/bash
 
 BITCOIND_CONFIGFILE=${BITCOIND_CONFIGFILE:-/etc/bitcoin/bitcoin.conf}
 BITCOIND_PIDDIR=${BITCOIND_PIDDIR:{{ btc_data }}}
@@ -18,11 +18,11 @@ command_args="-pid=\"${BITCOIND_PIDFILE}\" \
 		-datadir=\"${BITCOIND_DATADIR}\" \
 		-daemon \
     {{ btc_net }} \
-    -txindex=1
+    -txindex=1 \
     -zmqpubhashblock=\"tcp://{{ zmq_addr }}:{{ zmq_port }}\" \
     -zmqpubhashtx=\"tcp://{{ zmq_addr }}:{{ zmq_port }}\" \
     -zmqpubrawblock=\"tcp://{{ zmq_addr }}:{{ zmq_port }}\" \
-    -zmqpubrawtx=\"tcp://{{ zmq_addr }}:{{ zmq_port }}\"
+    -zmqpubrawtx=\"tcp://{{ zmq_addr }}:{{ zmq_port }}\""
 
 required_files="${BITCOIND_CONFIGFILE}"
 start_stop_daemon_args="-u ${BITCOIND_USER} \

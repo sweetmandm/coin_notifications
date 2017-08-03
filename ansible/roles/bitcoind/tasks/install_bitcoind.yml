@@ -1,6 +1,6 @@
 ---
 - apt_repository:
-  repo: 'ppa:bitcoin/bitcoin'
+    repo: 'ppa:bitcoin/bitcoin'
 
 - name: Install bitcoind
   apt:

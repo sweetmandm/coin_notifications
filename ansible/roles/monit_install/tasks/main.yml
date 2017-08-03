@@ -7,6 +7,18 @@
             mode=700
   register: web_interface_monit_config
 
+- name: Register monit config files
+  template: src={{ item }}.j2
+            dest=/etc/monit/conf.d/{{ item }}
+            mode=u=rw,g=r,o=r
+  with_items:
+    - web_interface
+  register: web_interface_monit_config
+
+- name: Reload Monit
+  command: bash -lc "monit reload"
+  when: web_interface_monit_config.changed
+
 - name: Give deployer user access to monit
   lineinfile: 'dest=/etc/sudoers
                state=present
