@@ -2,15 +2,15 @@
 - name: Apply common configuration
   hosts: all
   remote_user: root
-  become: true
   roles:
     - common
+    - deployer_user
+    - git_checkout
 
 - name: Apply bitcoin node configuration
   hosts:
     - nodes
     - dev
   remote_user: root
-  become: true
   roles:
     - node

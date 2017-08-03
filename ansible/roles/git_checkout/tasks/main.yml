@@ -1,0 +1,26 @@
+---
+- name: Check if path exists
+  stat: path={{ app_path }}
+  register: app_path_stat
+
+- name: Check if there are commited changes on {{ git_branch }}
+  remote_user: "{{ deployer_user.name }}"
+  command: bash -lc "git fetch origin && git diff --name-only origin/{{ git_branch }}"
+  args:
+    chdir: "{{app_path}}"
+  register: changes_on_remote
+  when: app_path_stat.stat.exists
+
+- name: Inform user if there are no changes
+  debug: msg="WARNING - No changes detected; proceeding with deploy anyway"
+  when: app_path_stat.stat.exists and changes_on_remote.stdout_lines == []
+
+- name: Check out application
+  remote_user: "{{ deployer_user.name }}"
+  git:
+    dest: "{{ app_path }}"
+    repo: "{{ git_repo }}"
+    version: "{{ git_branch }}"
+    accept_hostkey: true
+    force: true
+  register: app_checkout

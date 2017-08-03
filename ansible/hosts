@@ -1,5 +1,5 @@
 [vagrant]
-192.168.50.8 ansible_ssh_user='ubuntu' ansible_ssh_private_key_file='.vagrant/machines/default/virtualbox/private_key'
+192.168.50.8 git_branch=master
 
 [dev:children]
 vagrant
