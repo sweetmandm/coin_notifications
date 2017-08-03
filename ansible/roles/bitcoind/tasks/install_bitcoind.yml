@@ -7,11 +7,28 @@
     name: bitcoind
     update_cache: yes
 
-- name: Register bitcoind init script
+- name: Scripts path
+  file: path=/home/{{ deployer_user.name }}/scripts state=directory owner={{ deployer_user.name }}
+
+- name: Data path
+  file: path={{ btc_data }} state=directory owner={{ deployer_user.name }}
+
+- name: Place bitcoind start script
   template:
-    src: bitcoind.j2
-    dest: /etc/init.d/bitcoind
+    src: start.j2
+    dest: /home/{{ deployer_user.name }}/scripts/start-bitcoind
+    owner: "{{ deployer_user.name }}"
     mode: u=rwx,g=r,o=r
+
+- name: Place bitcoind stop script
+  template:
+    src: stop.j2
+    dest: /home/{{ deployer_user.name }}/scripts/stop-bitcoind
+    owner: "{{ deployer_user.name }}"
+    mode: u=rwx,g=r,o=r
+
+- name: Pid path
+  file: path=/home/{{ deployer_user.name }}/tmp state=directory owner={{ deployer_user.name }}
 
 - name: Register with monit
   template: src=bitcoind.monit.j2

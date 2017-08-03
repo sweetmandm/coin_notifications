@@ -1,6 +1,8 @@
 check process bitcoind
-    with pidfile "{{ btc_data }}/bitcoind.pid"
-    start program = "/etc/init.d/bitcoind start"
-    stop program = "/etc/init.d/bitcoind stop"
+    with pidfile "/home/{{ deployer_user.name }}/tmp/bitcoind.pid"
+    start program = "/home/{{ deployer_user.name }}/scripts/start-bitcoind"
+      as uid {{ deployer_user.name }} and gid {{ deployer_user.name }}
+    stop program = "/home/{{ deployer_user.name }}/scripts/stop-bitcoind"
+      as uid {{ deployer_user.name }} and gid {{ deployer_user.name }}
     if failed port 8332 for 2 cycles then restart
     if 5 restarts within 5 cycles then timeout
