@@ -15,3 +15,11 @@
   remote_user: root
   roles:
     - bitcoind
+
+- name: Apply notifier configuration
+  hosts:
+    - notifiers
+    - dev
+  remote_user: root
+  roles:
+    - elixir
