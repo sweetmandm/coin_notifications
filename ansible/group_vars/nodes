@@ -1,0 +1,2 @@
+allowed_ports:
+  - 8333 # bitcoin network

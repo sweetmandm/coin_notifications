@@ -5,6 +5,7 @@
   roles:
     - common
     - deployer_user
+    - ufw
     - monit_install
     - git_checkout
 
