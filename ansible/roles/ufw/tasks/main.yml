@@ -8,6 +8,9 @@
 - name: Set ufw policy
   ufw: state=enabled direction=incoming policy=deny
 
+- name: Allow rpc
+  ufw: proto=tcp port=8332 from_ip=127.0.0.1 rule=allow
+
 - name: Allow ports
   ufw: proto=tcp port={{ item }} rule=allow
   with_items: "{{ allowed_ports }}"
