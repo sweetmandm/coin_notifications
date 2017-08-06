@@ -58,6 +58,7 @@ case "$1" in
    #   2 if daemon could not be started
    start-stop-daemon --start --quiet --pidfile $PIDFILE --exec $DAEMON --test > /dev/null || return 1
    start-stop-daemon --start --quiet --chuid $CHUID --pidfile $PIDFILE --exec $DAEMON -- $DAEMON_ARGS || return 2
+   [ -f $PIDFILE ] && chmod a=rw $PIDFILE
    case "$?" in
       0|1) [ "$VERBOSE" != no ] && log_end_msg 0 ;;
       2) [ "$VERBOSE" != no ] && log_end_msg 1 ;;
