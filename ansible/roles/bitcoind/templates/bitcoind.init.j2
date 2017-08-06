@@ -23,10 +23,10 @@ DAEMON_ARGS="\
   {{ btc_net }} \
   -datadir={{ btc_data }} \
   -txindex=1 \
-  -zmqpubhashblock=tcp://127.0.0.1:28332 \
-  -zmqpubhashtx=tcp://127.0.0.1:28332 \
-  -zmqpubrawblock=tcp://127.0.0.1:28332 \
-  -zmqpubrawtx=tcp://127.0.0.1:28332 \
+  -zmqpubhashblock=tcp://{{ zmq_addr }}:{{ zmq_port }} \
+  -zmqpubhashtx=tcp://{{ zmq_addr }}:{{ zmq_port }} \
+  -zmqpubrawblock=tcp://{{ zmq_addr }}:{{ zmq_port }} \
+  -zmqpubrawtx=tcp://{{ zmq_addr }}:{{ zmq_port }} \
   -pid=$PIDFILE"
 STOP_ARGS="\
   {{ btc_net }} \
@@ -49,20 +49,25 @@ do_stop()
    start-stop-daemon --stop --quiet --chuid $CHUID --retry=TERM/30/KILL/5 --pidfile $PIDFILE --name $NAME || return 2
 }
 
-case "$1" in
-  start)
-   [ "$VERBOSE" != no ] && log_daemon_msg "Starting $DESC" "$NAME"
+do_start()
+{
    # Return
    #   0 if daemon has been started
    #   1 if daemon was already running
    #   2 if daemon could not be started
    start-stop-daemon --start --quiet --pidfile $PIDFILE --exec $DAEMON --test > /dev/null || return 1
    start-stop-daemon --start --quiet --chuid $CHUID --pidfile $PIDFILE --exec $DAEMON -- $DAEMON_ARGS || return 2
-   [ -f $PIDFILE ] && chmod a=rw $PIDFILE
+}
+
+case "$1" in
+  start)
+   [ "$VERBOSE" != no ] && log_daemon_msg "Starting $DESC" "$NAME"
+   do_start
    case "$?" in
       0|1) [ "$VERBOSE" != no ] && log_end_msg 0 ;;
       2) [ "$VERBOSE" != no ] && log_end_msg 1 ;;
    esac
+   [ -f $PIDFILE ] && chmod a=rw $PIDFILE
    ;;
   stop)
    [ "$VERBOSE" != no ] && log_daemon_msg "Stopping $DESC" "$NAME"
