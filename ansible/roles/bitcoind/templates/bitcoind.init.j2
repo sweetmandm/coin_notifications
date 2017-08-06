@@ -14,23 +14,26 @@ PATH=/sbin:/bin:/usr/sbin:/usr/bin:/usr/local/sbin:/usr/local/bin
 DESC="Bitcoin Daemon"
 NAME=bitcoind
 CLI=/usr/bin/bitcoin-cli
-PIDFILE={{ btc_data }}/bitcoind.pid
+PIDFILE={{ datadir }}/bitcoind.pid
 SCRIPTNAME=/etc/init.d/bitcoind
 CHUID={{ deployer_user.name }}:{{ deployer_user.name }}
 DAEMON=/usr/bin/bitcoind
+ZMQ=tcp://{{ btc_opts.zmq.addr }}:{{ btc_opts.zmq.port }}
 DAEMON_ARGS="\
   -daemon \
-  {{ btc_net }} \
-  -datadir={{ btc_data }} \
+  {{ btc_opts.net }} \
+  -port={{ btc_opts.port }} \
+  -datadir={{ datadir }} \
   -txindex=1 \
-  -zmqpubhashblock=tcp://{{ zmq_addr }}:{{ zmq_port }} \
-  -zmqpubhashtx=tcp://{{ zmq_addr }}:{{ zmq_port }} \
-  -zmqpubrawblock=tcp://{{ zmq_addr }}:{{ zmq_port }} \
-  -zmqpubrawtx=tcp://{{ zmq_addr }}:{{ zmq_port }} \
+  -zmqpubhashblock=$ZMQ \
+  -zmqpubhashtx=$ZMQ \
+  -zmqpubrawblock=$ZMQ \
+  -zmqpubrawtx=$ZMQ \
+  {{ btc_opts.extras }} \
   -pid=$PIDFILE"
 STOP_ARGS="\
-  {{ btc_net }} \
-  -datadir={{ btc_data }}"
+  {{ btc_opts.net }} \
+  -datadir={{ datadir }}"
 
 test -x $DAEMON || exit 5
 

@@ -7,7 +7,7 @@
     name: bitcoind
     update_cache: yes
 - name: Data path
-  file: path={{ btc_data }} state=directory owner={{ deployer_user.name }}
+  file: path={{ datadir }} state=directory owner={{ deployer_user.name }}
 
 - name: Place bitcoind init script
   template:

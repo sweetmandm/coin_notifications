@@ -1,0 +1,12 @@
+---
+btc_opts:
+  net:
+  port: 8333
+  datadir: "{{ datadir }}"
+  extras: "-txindex=1"
+  zmq:
+    addr: 127.0.0.1
+    port: 28332
+
+allowed_ports:
+  - "{{ btc_opts.port }}"

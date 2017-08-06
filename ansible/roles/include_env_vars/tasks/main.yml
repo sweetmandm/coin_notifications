@@ -1,0 +1,3 @@
+- name: Include env vars
+  include_vars:
+    file: "{{ env }}.yml"

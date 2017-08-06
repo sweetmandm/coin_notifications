@@ -1,4 +1,4 @@
 check process bitcoind
-    with pidfile "{{ btc_data }}/bitcoind.pid"
+    with pidfile "{{ datadir }}/bitcoind.pid"
     start program = "/etc/init.d/bitcoind start"
     stop program = "/etc/init.d/bitcoind stop"

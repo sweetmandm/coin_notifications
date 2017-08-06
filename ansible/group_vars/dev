@@ -1,3 +1,0 @@
-allowed_ports:
-  - 28391 # zeromq
-  - 8333 # bitcoin network

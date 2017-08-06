@@ -1,2 +1,0 @@
-allowed_ports:
-  - 28391 # zeromq

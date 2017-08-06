@@ -1,4 +1,10 @@
 ---
+- name: Apply env vars
+  remote_user: root
+  hosts: all
+  roles:
+    - include_env_vars
+
 - name: Apply common configuration
   hosts: all
   remote_user: root
