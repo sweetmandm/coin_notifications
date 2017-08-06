@@ -2,3 +2,5 @@ check process bitcoind
     with pidfile "{{ datadir }}/bitcoind.pid"
     start program = "/etc/init.d/bitcoind start"
     stop program = "/etc/init.d/bitcoind stop"
+    if failed port {{ btc_opts.port }} type tcp for 2 cycles then restart
+    if 5 restarts within 5 cycles then timeout
