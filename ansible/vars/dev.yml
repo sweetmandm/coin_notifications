@@ -1,6 +1,6 @@
 ---
 btc_opts:
-  net: "-testnet"
+  net: "-regtest"
   port: 18333
   datadir: "{{ datadir }}"
   extras: "-prune"
