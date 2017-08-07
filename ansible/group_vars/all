@@ -1,9 +1,3 @@
-deployer_user:
-  name: deployer
-  groups:
-    - deployer
-    - staff
-
 git_repo: git@github.com:sweetmandm/coin_notifications.git
 
 app_path: coin_notifications

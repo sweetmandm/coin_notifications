@@ -10,3 +10,9 @@ btc_opts:
 
 allowed_ports:
   - "{{ btc_opts.port }}"
+
+deployer_user:
+  name: deployer
+  groups:
+    - deployer
+    - staff

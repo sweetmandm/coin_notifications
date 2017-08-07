@@ -11,6 +11,6 @@
   with_items: '{{ deployer_user.groups }}'
 
 - name: Ensure deployer user owns its own homedir
-  file: path=/home/deployer state=directory owner=deployer
+  file: path=/home/{{ deployer_user.name }} state=directory owner={{ deployer_user.name }}
 
 - include: keys.yml

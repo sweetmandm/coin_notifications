@@ -17,17 +17,12 @@ Prerequisites:
 
 ```bash
 $ vagrant up
-
-# Manual step:
-# - And a public ssh key to vagrant's `/root/.ssh/authorized_keys`
-# - `ssh-add` the private key on your host machine
-
+$ ssh-add .vagrant/machines/default/virtualbox/private_key
 $ ansible-playbook -i ansible/hosts ansible/provision.yml -l dev
-
-$ ssh deployer@192.168.50.8
+$ vagrant ssh
 ```
 
-After you've ssh'd into the box, Ansible has also provided a command-line command `btccli` which will execute against the active bitcoin network and data directory, so you don't have to use `bitcoin-cli -testnet -datadir=...`
+After you've ssh'd into the box, Ansible has also provided a command-line command `btccli` which will execute against the active bitcoin network and data directory, so you don't have to use `bitcoin-cli -regtest -datadir=...`
 
 For example:
 
