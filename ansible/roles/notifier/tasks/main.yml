@@ -1,0 +1,5 @@
+---
+- name: Install ZMQ config
+  template:
+    src: zmq_config.exs.j2
+    dest: {{ app_path }}/coinpusher/config/zmq_config.exs
