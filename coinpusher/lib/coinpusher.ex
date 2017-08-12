@@ -1,30 +1,46 @@
 defmodule CoinPusher.ZMQClient do
-  def main do
+  require Logger
+  alias CoinPusher.RawTransaction
+
+  def init(address, port) do
+    pid = spawn_listener(address, port)
+    {:ok, pid}
+  end
+
+  def spawn_listener(address, port) do 
+    spawn_link(fn ->
+      start_listen(address, port)
+    end)
+  end
+
+  def start_listen(address, port) do
+    Logger.info "[ZMQ] Subscribing to #{address}:#{port}"
     {:ok, socket} = :chumak.socket(:sub)
     subscribe(socket)
-    {:ok, _pid} = :chumak.connect(socket, :tcp, zmq_address(), zmq_port())
+    {:ok, _pid} = :chumak.connect(socket, :tcp, address, port)
     loop(socket)
   end
 
-  defp zmq_address do
-    to_charlist(Application.get_env(:coinpusher, :zmq_address))
-  end
-
-  defp zmq_port do
-    Application.get_env(:coinpusher, :zmq_port)
-  end
-
   defp subscribe(socket) do
-    :chumak.subscribe(socket, 'hashblock')
-    :chumak.subscribe(socket, 'hashtx')
     :chumak.subscribe(socket, 'rawblock')
     :chumak.subscribe(socket, 'rawtx')
   end
 
   defp loop(socket) do
-    IO.puts "waiting"
-    {:ok, data} = :chumak.recv_multipart(socket)
-    IO.inspect data
+    {:ok, message} = :chumak.recv_multipart(socket)
+    handle(message)
     loop(socket)
+  end
+
+  defp handle(["rawblock", _data, _]) do
+  end
+
+  defp handle(["rawtx", data, _]) do
+    case RawTransaction.parse(data) do
+      {:ok, _tx} ->
+        :ok
+      {:error, reason} ->
+        IO.inspect reason
+    end
   end
 end

@@ -5,10 +5,19 @@ defmodule CoinPusher.Application do
     import Supervisor.Spec
 
     children = [
-      worker(CoinPusher.ZMQClient, [])
+      worker(CoinPusher.ZMQClient, [zmq_address(), zmq_port()], function: :init)
     ]
 
     opts = [strategy: :one_for_one, name: CoinPusher.Supervisor]
     Supervisor.start_link(children, opts)
+  end
+
+  defp zmq_address do
+    Application.get_env(:coinpusher, :zmq_address)
+      |> to_charlist
+  end
+
+  defp zmq_port do
+    Application.get_env(:coinpusher, :zmq_port)
   end
 end

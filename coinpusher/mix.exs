@@ -13,7 +13,7 @@ defmodule CoinPusher.Mixfile do
 
   def application do
     [
-      #mod: {CoinPusher.Application, []},
+      mod: {CoinPusher.Application, []},
       extra_applications: [:logger]
     ]
   end
