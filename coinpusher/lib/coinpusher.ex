@@ -7,7 +7,7 @@ defmodule CoinPusher.ZMQClient do
     {:ok, pid}
   end
 
-  def spawn_listener(address, port) do 
+  def spawn_listener(address, port) do
     spawn_link(fn ->
       start_listen(address, port)
     end)
