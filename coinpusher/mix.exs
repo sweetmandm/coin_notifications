@@ -7,6 +7,7 @@ defmodule CoinPusher.Mixfile do
       version: "0.1.0",
       elixir: "~> 1.5",
       start_permanent: Mix.env == :prod,
+      preferred_cli_env: [espec: :test],
       deps: deps()
     ]
   end
@@ -20,7 +21,8 @@ defmodule CoinPusher.Mixfile do
 
   defp deps do
     [
-      {:chumak, github: "zeromq/chumak"}
+      {:chumak, github: "zeromq/chumak"},
+      {:espec, "~> 1.4.5", only: :test}
     ]
   end
 end

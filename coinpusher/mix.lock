@@ -1,1 +1,3 @@
-%{"chumak": {:git, "https://github.com/zeromq/chumak.git", "8d3c032f87e511cd7012c55f10ec11140c663a88", []}}
+%{"chumak": {:git, "https://github.com/zeromq/chumak.git", "8d3c032f87e511cd7012c55f10ec11140c663a88", []},
+  "espec": {:hex, :espec, "1.4.5", "42defe77dadd02c011281a1ee22c5e468303d2806c024e9ee9be6d18171d771f", [], [{:meck, "0.8.7", [hex: :meck, repo: "hexpm", optional: false]}], "hexpm"},
+  "meck": {:hex, :meck, "0.8.7", "ebad16ca23f685b07aed3bc011efff65fbaf28881a8adf925428ef5472d390ee", [], [], "hexpm"}}
