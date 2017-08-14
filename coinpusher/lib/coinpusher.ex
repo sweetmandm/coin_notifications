@@ -1,4 +1,5 @@
 defmodule CoinPusher.ZMQClient do
+  require IEx
   require Logger
   alias CoinPusher.RawTransaction
 
@@ -37,7 +38,8 @@ defmodule CoinPusher.ZMQClient do
 
   defp handle(["rawtx", data, _]) do
     case RawTransaction.parse(data) do
-      {:ok, _tx} ->
+      {:ok, tx} ->
+        IEx.pry
         :ok
       {:error, reason} ->
         IO.inspect reason
