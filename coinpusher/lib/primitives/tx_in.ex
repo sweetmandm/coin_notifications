@@ -1,7 +1,8 @@
 # https://en.bitcoin.it/wiki/Protocol_documentation#tx
 defmodule CoinPusher.TxIn do
-  defstruct [:previous_output, :signature_script, :sequence]
   alias CoinPusher.{OutPoint, VarInt}
+
+  defstruct [:previous_output, :signature_script, :sequence]
 
   def parse(data) do
     {:ok, out_point, data} = OutPoint.parse(data)
