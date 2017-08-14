@@ -1,7 +1,7 @@
 defmodule VarIntSpec do
   use ESpec
 
-  subject do: CoinPusher.VarInt.parse(data)
+  subject do: CoinPusher.VarInt.parse(data())
 
   describe "uint8" do
     let :data, do: <<1>>
