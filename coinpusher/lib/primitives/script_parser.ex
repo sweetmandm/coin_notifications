@@ -1,22 +1,21 @@
 defmodule CoinPusher.ScriptParser do
   alias CoinPusher.OP
   use CoinPusher.OP
+  require IEx
 
   @templates [
     # Standard tx, sender provides pubkey, receiver adds signature
-    %{tx_pubkey: [@op_pubkey, @op_checksig]},
+    [:tx_pubkey, <<@op_pubkey, @op_checksig>>],
     # Bitcoin address tx, sender provides hash of pubkey, receiver provides signature and pubkey
-    %{tx_pubkeyhash: [@op_dup, @op_hash160, @op_pubkeyhash, @op_equalverify, @op_checksig]},
+    [tx_pubkeyhash: <<@op_dup, @op_hash160, @op_pubkeyhash, @op_equalverify, @op_checksig>>],
     # Sender provides N pubkeys, receivers provides M signatures
-    %{tx_multisig: [@op_smallinteger, @op_pubkeys, @op_smallinteger, @op_checkmultisig]}
+    [tx_multisig: <<@op_smallinteger, @op_pubkeys, @op_smallinteger, @op_checkmultisig>>]
   ]
 
-  defmacro is_pay_to_script_hash(pub_key) do
-    quote do
-      byte_size(unquote(pub_key)) == 23 and
-      binary_part(unquote(pub_key), 0, 2) == <<@op_hash160, 0x14>> and
-      binary_part(unquote(pub_key), 22, 1) == <<@op_equal>>
-    end
+  def is_pay_to_script_hash(pub_key) do
+      byte_size(pub_key) == 23 and
+      binary_part(pub_key, 0, 2) == <<@op_hash160, 0x14>> and
+      binary_part(pub_key, 22, 1) == <<@op_equal>>
   end
 
   def is_prunable(pub_key) do
@@ -56,11 +55,11 @@ defmodule CoinPusher.ScriptParser do
   end
 
   def get_all_opcodes(ops, data) do
-    {:ok, {opcode, _, remainder}} = get_op(data)
+    {:ok, %OP{opcode: opcode, data: _, remainder: remainder}} = get_op(data)
     get_all_opcodes(ops ++ [opcode], remainder)
   end
 
-  def is_witness_program(pub_key) do
+  def is_witness_program?(pub_key) do
     opcode = binary_part(pub_key, 0, 1)
     cond do
       byte_size(pub_key) < 4 or byte_size(pub_key) > 42 ->
@@ -68,12 +67,17 @@ defmodule CoinPusher.ScriptParser do
       !can_decode_op_n(opcode) ->
         false
       byte_size(pub_key) == binary_part(pub_key, 1, 1) + 2 ->
-        version = decode_op_n(opcode)
-        program = binary_part(pub_key, 2, byte_size(pub_key) - 2)
-        {:ok, version, program}
+        true
       true ->
         false
     end
+  end
+
+  def get_witness_program(pub_key) do
+    opcode = binary_part(pub_key, 0, 1)
+    version = decode_op_n(opcode)
+    program = binary_part(pub_key, 2, byte_size(pub_key) - 2)
+    {:ok, version, program}
   end
 
   def can_decode_op_n(opcode) do
@@ -96,7 +100,8 @@ defmodule CoinPusher.ScriptParser do
       is_prunable(pub_key) ->
         {:ok, :tx_null_data, []}
 
-      {:ok, version, program} = is_witness_program(pub_key) ->
+      is_witness_program?(pub_key) ->
+        {:ok, version, program} = get_witness_program(pub_key)
         program_size = byte_size(program)
         case {version, program_size} do
           {0, 20} ->
@@ -106,9 +111,9 @@ defmodule CoinPusher.ScriptParser do
           _ ->
             :error
         end
+      true ->
+        check_templates(pub_key)
     end
-
-    check_templates(pub_key)
   end
 
   def check_templates(templates \\ @templates, script, solutions \\ :no_match)
@@ -147,18 +152,18 @@ defmodule CoinPusher.ScriptParser do
     cond do
       template_op.opcode == @op_pubkeys ->
         {:ok, remaining_script, pubkeys} = consume_pubkey_opcodes(script)
-        solve_template(template_op.data, remaining_script, solutions ++ pubkeys)
+        solve_template(template_op.remainder, remaining_script, solutions ++ pubkeys)
       template_op.opcode == @op_pubkey ->
         solution = if byte_size(script_op.data) in 33..65, do: [script_op.data], else: []
-        solve_template(template_op.data, script_op.data, solutions ++ solution)
+        solve_template(template_op.remainder, script_op.remainder, solutions ++ solution)
       template_op.opcode == @op_pubkeyhash ->
         hash = if byte_size(script_op.data) == 20, do: [script_op.data], else: []
-        solve_template(template_op.data, script_op.data, solutions ++ hash)
+        solve_template(template_op.remainder, script_op.remainder, solutions ++ hash)
       template_op.opcode == @op_smallinteger ->
         n = if can_decode_op_n(script_op.opcode), do: [decode_op_n(script_op.opcode)], else: []
-        solve_template(template_op.data, script_op.data, solutions ++ n)
+        solve_template(template_op.remainder, script_op.remainder, solutions ++ n)
       template_op.opcode == script_op.opcode and template_op.data == script_op.data ->
-        solve_template(template_op.data, script_op.data, solutions)
+        solve_template(template_op.remainder, script_op.remainder, solutions)
       true ->
         {:error, :tx_nonstandard}
     end
