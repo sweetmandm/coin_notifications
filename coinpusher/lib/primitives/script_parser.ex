@@ -2,14 +2,14 @@ defmodule CoinPusher.ScriptParser do
   alias CoinPusher.OP
   use CoinPusher.OP
 
-  @templates %{
+  @templates [
     # Standard tx, sender provides pubkey, receiver adds signature
-    tx_pubkey: [@op_pubkey, @op_checksig],
+    %{tx_pubkey: [@op_pubkey, @op_checksig]},
     # Bitcoin address tx, sender provides hash of pubkey, receiver provides signature and pubkey
-    tx_pubkeyhash: [@op_dup, @op_hash160, @op_pubkeyhash, @op_equalverify, @op_checksig],
+    %{tx_pubkeyhash: [@op_dup, @op_hash160, @op_pubkeyhash, @op_equalverify, @op_checksig]},
     # Sender provides N pubkeys, receivers provides M signatures
-    tx_multisig: [@op_smallinteger, @op_pubkeys, @op_smallinteger, @op_checkmultisig]
-  }
+    %{tx_multisig: [@op_smallinteger, @op_pubkeys, @op_smallinteger, @op_checkmultisig]}
+  ]
 
   defmacro is_pay_to_script_hash(pub_key) do
     quote do
@@ -26,8 +26,8 @@ defmodule CoinPusher.ScriptParser do
   end
 
   def is_push_only(script) do
-    ops = get_all_ops(script)
-    {left, right} = Enum.split_while
+    ops = get_all_opcodes(script)
+    ops |> Enum.filter(fn(op) -> op > @op_16 end) == []
   end
 
   def get_op(data) do
@@ -42,17 +42,22 @@ defmodule CoinPusher.ScriptParser do
         {:ok, %OP{opcode: @op_pushdata4, data: data, remainder: rest}}
       <<opcode :: unsigned-integer-8, rest :: binary>> ->
         {:ok, %OP{opcode: opcode, data: <<>>, remainder: rest}}
+      <<>> ->
+        {:notok, :empty}
+      _ ->
+        :error
     end
   end
 
-  def get_all_ops(ops \\ [], data)
+  def get_all_opcodes(ops \\ [], data)
 
-  def get_all_ops(ops, data) do
-    ops ++ [get_op(data)]
+  def get_all_opcodes(ops, <<>>) do
+    ops
   end
 
-  def get_all_ops(ops, <<>>) do
-    ops
+  def get_all_opcodes(ops, data) do
+    {:ok, {opcode, _, remainder}} = get_op(data)
+    get_all_opcodes(ops ++ [opcode], remainder)
   end
 
   def is_witness_program(pub_key) do
@@ -60,15 +65,19 @@ defmodule CoinPusher.ScriptParser do
     cond do
       byte_size(pub_key) < 4 or byte_size(pub_key) > 42 ->
         false
-      opcode != @op_0 and (opcode < @op_1 || opcode > @op_16) ->
+      !can_decode_op_n(opcode) ->
         false
-      byte_size(pub_key) == binary_part(pub_key, 1, 1) + 2
+      byte_size(pub_key) == binary_part(pub_key, 1, 1) + 2 ->
         version = decode_op_n(opcode)
         program = binary_part(pub_key, 2, byte_size(pub_key) - 2)
         {:ok, version, program}
       true ->
         false
     end
+  end
+
+  def can_decode_op_n(opcode) do
+    opcode == @op_0 or opcode in @op_1..@op_16
   end
 
   def decode_op_n(opcode) do
@@ -81,10 +90,12 @@ defmodule CoinPusher.ScriptParser do
   def solver(pub_key) do
     cond do
       is_pay_to_script_hash(pub_key) ->
-        <<_head :: binary-size(2), hash_bytes :: binary-size(20), rest :: binary>> = pub_key
+        <<_head :: binary-size(2), hash_bytes :: binary-size(20), _rest :: binary>> = pub_key
         {:ok, :tx_scripthash, [hash_bytes]}
+
       is_prunable(pub_key) ->
         {:ok, :tx_null_data, []}
+
       {:ok, version, program} = is_witness_program(pub_key) ->
         program_size = byte_size(program)
         case {version, program_size} do
@@ -92,45 +103,142 @@ defmodule CoinPusher.ScriptParser do
             {:ok, :tx_witness_v0_keyhash, [program]}
           {0, 32} ->
             {:ok, :tx_witness_v0_scripthash, [program]}
+          _ ->
+            :error
         end
+    end
+
+    check_templates(pub_key)
+  end
+
+  def check_templates(templates \\ @templates, script, solutions \\ :no_match)
+
+  def check_templates([], _script, :no_match), do: {:ok, :tx_nonstandard, []}
+
+  def check_templates(templates, script, :no_match) do
+    [head | tail] = templates
+    template_type = head |> Enum.at(0)
+    template_script = head |> Enum.at(1)
+    result = solve_template(template_script, script)
+    case result do
+      {:ok, solutions} ->
+        {:ok, template_type, solutions}
+      _ ->
+        check_templates(tail, script, :no_match)
+    end
+  end
+
+  def solve_template(template_script, script, solutions \\ [])
+
+  def solve_template(template_script, script, solutions) when <<>> == template_script and <<>> ==  script do
+    # Successfully matched a template script.
+    {:ok, solutions}
+  end
+
+  def solve_template(template_script, script, _) when <<>> in [template_script, script] do
+    # One of the scripts is empty but the other is not - no match.
+    {:ok, []}
+  end
+
+  def solve_template(template_script, script, solutions) do
+    {:ok, template_op} = get_op(template_script)
+    {:ok, script_op} = get_op(script)
+    script = script_op.data
+    cond do
+      template_op.opcode == @op_pubkeys ->
+        {:ok, remaining_script, pubkeys} = consume_pubkey_opcodes(script)
+        solve_template(template_op.data, remaining_script, solutions ++ pubkeys)
+      template_op.opcode == @op_pubkey ->
+        solution = if byte_size(script_op.data) in 33..65, do: [script_op.data], else: []
+        solve_template(template_op.data, script_op.data, solutions ++ solution)
+      template_op.opcode == @op_pubkeyhash ->
+        hash = if byte_size(script_op.data) == 20, do: [script_op.data], else: []
+        solve_template(template_op.data, script_op.data, solutions ++ hash)
+      template_op.opcode == @op_smallinteger ->
+        n = if can_decode_op_n(script_op.opcode), do: [decode_op_n(script_op.opcode)], else: []
+        solve_template(template_op.data, script_op.data, solutions ++ n)
+      template_op.opcode == script_op.opcode and template_op.data == script_op.data ->
+        solve_template(template_op.data, script_op.data, solutions)
+      true ->
+        {:error, :tx_nonstandard}
+    end
+  end
+
+  def consume_pubkey_opcodes(script, solutions \\ []) do
+    result = get_op(script)
+    case result do
+      {:ok, {_, data, _} = op} when byte_size(data) in 33..65 ->
+        consume_pubkey_opcodes(op.remainder, solutions ++ [data])
+      _ ->
+        {:ok, script, solutions}
     end
   end
 
   def extract_destinations(script_pub_key) do
     {:ok, type, solutions} = solver(script_pub_key)
     case type do
-      :tx_null_data -> {:error, type}
-      :tx_multisig -> {:ok, type, solutions, 1}
-      other -> {:ok, type, solutions, 1}
+      :tx_null_data ->
+        {:error, type}
+      :tx_multisig ->
+        [nRequired | solutions] = solutions
+        addresses = addresses_for(solutions)
+        {:ok, type, addresses, nRequired}
+      _ ->
+        address = extract_destination(type, solutions)
+        {:ok, type, [address], 1}
     end
-  end
-
-  def addresses_for(:tx_null_data, pub_key) do
-    :error
-  end
-
-  def addresses_for(type = :tx_multisig, pub_key) do
-    addresses = []
-    {:ok, type, addresses}
-  end
-
-  def addresses_for(type, pub_key) do
-    address = extract_destination(pub_key)
-    {:ok, type, [address]}
   end
 
   def extract_destination(script_pub_key) do
     {:ok, type, solutions} = solver(script_pub_key)
+    address = extract_destination(type, solutions)
+    {:ok, type, address}
   end
 
-  def handle(:tx_pubkey, solutions) do
-    pub_key = solutions |> Enum.at(0)
-    pub_key |> PubKey.get_id
+  def extract_destination(type, solutions) do
+    case type do
+      :tx_pubkey ->
+        addresses_for(solutions) |> Enum.at(0)
+      :tx_pubkeyhash ->
+        solution = solutions |> Enum.at(0)
+        solution = <<solution :: unsigned-integer-160>>
+        solution
+      :tx_scripthash ->
+        solution = solutions |> Enum.at(0)
+        solution = <<solution :: unsigned-integer-160>>
+        address = ScriptID.of(solution)
+        address
+      _ ->
+        nil
+    end
+  end
+
+  def addresses_for(solutions) do
+    solutions
+    |> Enum.filter(&PubKey.is_valid?/1)
+    |> Enum.map(&PubKey.get_id/1)
   end
 end
 
 defmodule PubKey do
   def get_id(pub_key) do
-    "abc"
+    ScriptID.of(pub_key)
+  end
+
+  def is_valid?(pub_key) do
+    byte_size(pub_key) > 0
+  end
+end
+
+defmodule ScriptID do
+  def of(input) do
+    Hash160.of(input)
+  end
+end
+
+# A hasher for Bitcoin's 160-bit hash (SHA-256 + RIPEMD-160).
+defmodule Hash160 do
+  def of(input) do
+    :crypto.hash(:ripemd160, :crypto.hash(:sha256, input))
   end
 end
