@@ -186,8 +186,8 @@ defmodule CoinPusher.ScriptParser do
         {:error, type}
       :tx_multisig ->
         [nRequired | solutions] = solutions
-        addresses = addresses_for(solutions)
-        {:ok, type, addresses, nRequired}
+        destinations = destinations_for(solutions)
+        {:ok, type, destinations, nRequired}
       _ ->
         address = extract_destination(type, solutions)
         {:ok, type, [address], 1}
@@ -203,7 +203,7 @@ defmodule CoinPusher.ScriptParser do
   def extract_destination(type, solutions) do
     case type do
       :tx_pubkey ->
-        addresses_for(solutions) |> Enum.at(0)
+        destinations_for(solutions) |> Enum.at(0)
       :tx_pubkeyhash ->
         solution = solutions |> Enum.at(0)
         solution = <<solution :: unsigned-integer-160>>
@@ -218,7 +218,7 @@ defmodule CoinPusher.ScriptParser do
     end
   end
 
-  def addresses_for(solutions) do
+  def destinations_for(solutions) do
     solutions
     |> Enum.filter(&PubKey.is_valid?/1)
     |> Enum.map(&PubKey.get_id/1)
