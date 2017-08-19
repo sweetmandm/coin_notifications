@@ -128,7 +128,7 @@ defmodule CoinPusher.ScriptParser do
     case result do
       {:ok, solutions} ->
         {:ok, template_type, solutions}
-      _ ->
+      :no_match ->
         check_templates(tail, script, :no_match)
     end
   end
@@ -142,7 +142,7 @@ defmodule CoinPusher.ScriptParser do
 
   def solve_template(template_script, script, _) when <<>> in [template_script, script] do
     # One of the scripts is empty but the other is not - no match.
-    {:ok, []}
+    :no_match
   end
 
   def solve_template(template_script, script, solutions) do
