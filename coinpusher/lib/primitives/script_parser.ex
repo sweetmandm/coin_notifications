@@ -1,5 +1,5 @@
 defmodule CoinPusher.ScriptParser do
-  alias CoinPusher.OP
+  alias CoinPusher.{OP, PubKey, ScriptID}
   use CoinPusher.OP
 
   @templates [
@@ -218,28 +218,5 @@ defmodule CoinPusher.ScriptParser do
     solutions
     |> Enum.filter(&PubKey.is_valid?/1)
     |> Enum.map(&PubKey.get_id/1)
-  end
-end
-
-defmodule PubKey do
-  def get_id(pub_key) do
-    ScriptID.of(pub_key)
-  end
-
-  def is_valid?(pub_key) do
-    byte_size(pub_key) > 0
-  end
-end
-
-defmodule ScriptID do
-  def of(input) do
-    Hash160.of(input)
-  end
-end
-
-# A hasher for Bitcoin's 160-bit hash (SHA-256 + RIPEMD-160).
-defmodule Hash160 do
-  def of(input) do
-    :crypto.hash(:ripemd160, :crypto.hash(:sha256, input))
   end
 end
