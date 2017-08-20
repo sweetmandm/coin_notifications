@@ -1,7 +1,6 @@
 defmodule CoinPusher.ScriptParser do
   alias CoinPusher.OP
   use CoinPusher.OP
-  require IEx
 
   @templates [
     # Standard tx, sender provides pubkey, receiver adds signature
@@ -74,10 +73,18 @@ defmodule CoinPusher.ScriptParser do
   end
 
   def get_witness_program(pub_key) do
-    size = :binary.decode_unsigned(binary_part(pub_key, 1, 1))
-    <<opcode :: binary-1, _ :: binary-1, program :: binary-size(size), rest :: binary>> = pub_key
+    opcode = binary_part(pub_key, 0, 1)
     version = decode_op_n(opcode)
-    {:ok, version, program, rest}
+    program = binary_part(pub_key, 2, byte_size(pub_key) - 2)
+    program_size = byte_size(program)
+    case {version, program_size} do
+      {0, 20} ->
+        {:ok, :tx_witness_v0_keyhash, [program]}
+      {0, 32} ->
+        {:ok, :tx_witness_v0_scripthash, [program]}
+      _ ->
+        :error
+    end
   end
 
   def can_decode_op_n(opcode) do
@@ -94,23 +101,12 @@ defmodule CoinPusher.ScriptParser do
   def solver(pub_key) do
     cond do
       is_pay_to_script_hash(pub_key) ->
-        <<_head :: binary-size(2), hash_bytes :: binary-size(20), _rest :: binary>> = pub_key
+        <<_head :: binary-2, hash_bytes :: binary-20, _rest :: binary>> = pub_key
         {:ok, :tx_scripthash, [hash_bytes]}
-
       is_prunable(pub_key) ->
         {:ok, :tx_null_data, []}
-
       is_witness_program?(pub_key) ->
-        {:ok, version, program, _rest} = get_witness_program(pub_key)
-        program_size = byte_size(program)
-        case {version, program_size} do
-          {0, 20} ->
-            {:ok, :tx_witness_v0_keyhash, [program]}
-          {0, 32} ->
-            {:ok, :tx_witness_v0_scripthash, [program]}
-          _ ->
-            :error
-        end
+        get_witness_program(pub_key)
       true ->
         check_templates(pub_key)
     end
