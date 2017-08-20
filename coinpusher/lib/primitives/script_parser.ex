@@ -11,6 +11,45 @@ defmodule CoinPusher.ScriptParser do
     [tx_multisig: <<@op_smallinteger, @op_pubkeys, @op_smallinteger, @op_checkmultisig>>]
   ]
 
+  def extract_destinations(script_pub_key) do
+    {:ok, type, solutions} = solver(script_pub_key)
+    case type do
+      :tx_null_data ->
+        {:error, type}
+      :tx_multisig ->
+        [nRequired | solutions] = solutions
+        destinations = destinations_for(solutions)
+        {:ok, type, destinations, nRequired}
+      _ ->
+        address = extract_destination(type, solutions)
+        {:ok, type, [address], 1}
+    end
+  end
+
+  def extract_destination(script_pub_key) do
+    {:ok, type, solutions} = solver(script_pub_key)
+    address = extract_destination(type, solutions)
+    {:ok, type, address}
+  end
+
+  defp extract_destination(type, solutions) do
+    case type do
+      :tx_pubkey ->
+        destinations_for(solutions) |> Enum.at(0)
+      :tx_pubkeyhash ->
+        solution = solutions |> Enum.at(0)
+        solution = <<solution :: unsigned-integer-160>>
+        solution
+      :tx_scripthash ->
+        solution = solutions |> Enum.at(0)
+        solution = <<solution :: unsigned-integer-160>>
+        address = ScriptID.of(solution)
+        address
+      _ ->
+        nil
+    end
+  end
+
   def is_pay_to_script_hash(pub_key) do
       byte_size(pub_key) == 23 and
       binary_part(pub_key, 0, 2) == <<@op_hash160, 0x14>> and
@@ -26,6 +65,12 @@ defmodule CoinPusher.ScriptParser do
   def is_push_only(script) do
     ops = get_all_opcodes(script)
     ops |> Enum.filter(fn(op) -> op > @op_16 end) == []
+  end
+
+  defp destinations_for(solutions) do
+    solutions
+    |> Enum.filter(&PubKey.is_valid?/1)
+    |> Enum.map(&PubKey.get_id/1)
   end
 
   def get_op(data) do
@@ -112,23 +157,6 @@ defmodule CoinPusher.ScriptParser do
     end
   end
 
-  def check_templates(templates \\ @templates, script, solutions \\ :no_match)
-
-  def check_templates([], _script, :no_match), do: {:ok, :tx_nonstandard, []}
-
-  def check_templates(templates, script, :no_match) do
-    [head | tail] = templates
-    template_type = head |> Enum.at(0)
-    template_script = head |> Enum.at(1)
-    result = solve_template(template_script, script)
-    case result do
-      {:ok, solutions} ->
-        {:ok, template_type, solutions}
-      :no_match ->
-        check_templates(tail, script, :no_match)
-    end
-  end
-
   def solve_template(template_script, script, solutions \\ [])
 
   def solve_template(<<>>, <<>>, solutions) do
@@ -165,6 +193,23 @@ defmodule CoinPusher.ScriptParser do
     end
   end
 
+  def check_templates(templates \\ @templates, script, solutions \\ :no_match)
+
+  def check_templates([], _script, :no_match), do: {:ok, :tx_nonstandard, []}
+
+  def check_templates(templates, script, :no_match) do
+    [head | tail] = templates
+    template_type = head |> Enum.at(0)
+    template_script = head |> Enum.at(1)
+    result = solve_template(template_script, script)
+    case result do
+      {:ok, solutions} ->
+        {:ok, template_type, solutions}
+      :no_match ->
+        check_templates(tail, script, :no_match)
+    end
+  end
+
   def consume_pubkey_opcodes(script, solutions \\ []) do
     result = get_op(script)
     case result do
@@ -173,50 +218,5 @@ defmodule CoinPusher.ScriptParser do
       _ ->
         {:ok, script, solutions}
     end
-  end
-
-  def extract_destinations(script_pub_key) do
-    {:ok, type, solutions} = solver(script_pub_key)
-    case type do
-      :tx_null_data ->
-        {:error, type}
-      :tx_multisig ->
-        [nRequired | solutions] = solutions
-        destinations = destinations_for(solutions)
-        {:ok, type, destinations, nRequired}
-      _ ->
-        address = extract_destination(type, solutions)
-        {:ok, type, [address], 1}
-    end
-  end
-
-  def extract_destination(script_pub_key) do
-    {:ok, type, solutions} = solver(script_pub_key)
-    address = extract_destination(type, solutions)
-    {:ok, type, address}
-  end
-
-  def extract_destination(type, solutions) do
-    case type do
-      :tx_pubkey ->
-        destinations_for(solutions) |> Enum.at(0)
-      :tx_pubkeyhash ->
-        solution = solutions |> Enum.at(0)
-        solution = <<solution :: unsigned-integer-160>>
-        solution
-      :tx_scripthash ->
-        solution = solutions |> Enum.at(0)
-        solution = <<solution :: unsigned-integer-160>>
-        address = ScriptID.of(solution)
-        address
-      _ ->
-        nil
-    end
-  end
-
-  def destinations_for(solutions) do
-    solutions
-    |> Enum.filter(&PubKey.is_valid?/1)
-    |> Enum.map(&PubKey.get_id/1)
   end
 end
