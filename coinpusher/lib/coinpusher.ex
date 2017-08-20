@@ -1,7 +1,9 @@
 defmodule CoinPusher.ZMQClient do
   require Logger
+  require Base58
   alias CoinPusher.RawTransaction
   alias CoinPusher.ScriptParser
+  require IEx
 
   def init(address, port) do
     pid = spawn_listener(address, port)
@@ -41,8 +43,11 @@ defmodule CoinPusher.ZMQClient do
       {:ok, tx} ->
         out = tx.tx_out |> Enum.at(0)
         script = out.pk_script
-        destitations = ScriptParser.extract_destinations(script)
-        {:ok, destinations}
+        destinations = ScriptParser.extract_destinations(script)
+        {:ok, _, dests, _} = destinations
+        addresses = dests |> Enum.map(&BitcoinAddress.from/1)
+        Logger.info "[parsed rawtx] #{addresses}"
+        {:ok, addresses}
       {:error, reason} ->
         IO.inspect reason
     end

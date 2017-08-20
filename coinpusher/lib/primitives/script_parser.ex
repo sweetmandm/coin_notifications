@@ -1,7 +1,6 @@
 defmodule CoinPusher.ScriptParser do
   alias CoinPusher.OP
   use CoinPusher.OP
-  require IEx
 
   @templates [
     # Standard tx, sender provides pubkey, receiver adds signature
