@@ -131,7 +131,7 @@ defmodule CoinPusher.ScriptParser do
 
   def solve_template(template_script, script, solutions \\ [])
 
-  def solve_template(template_script, script, solutions) when <<>> == template_script and <<>> ==  script do
+  def solve_template(<<>>, <<>>, solutions) do
     # Successfully matched a template script.
     {:ok, solutions}
   end
