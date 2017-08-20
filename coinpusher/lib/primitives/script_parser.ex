@@ -1,6 +1,7 @@
 defmodule CoinPusher.ScriptParser do
   alias CoinPusher.OP
   use CoinPusher.OP
+  require IEx
 
   @templates [
     # Standard tx, sender provides pubkey, receiver adds signature
@@ -73,10 +74,10 @@ defmodule CoinPusher.ScriptParser do
   end
 
   def get_witness_program(pub_key) do
-    opcode = binary_part(pub_key, 0, 1)
+    size = :binary.decode_unsigned(binary_part(pub_key, 1, 1))
+    <<opcode :: binary-1, _ :: binary-1, program :: binary-size(size), rest :: binary>> = pub_key
     version = decode_op_n(opcode)
-    program = binary_part(pub_key, 2, byte_size(pub_key) - 2)
-    {:ok, version, program}
+    {:ok, version, program, rest}
   end
 
   def can_decode_op_n(opcode) do
@@ -100,7 +101,7 @@ defmodule CoinPusher.ScriptParser do
         {:ok, :tx_null_data, []}
 
       is_witness_program?(pub_key) ->
-        {:ok, version, program} = get_witness_program(pub_key)
+        {:ok, version, program, _rest} = get_witness_program(pub_key)
         program_size = byte_size(program)
         case {version, program_size} do
           {0, 20} ->

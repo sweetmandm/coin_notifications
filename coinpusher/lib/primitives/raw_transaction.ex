@@ -1,6 +1,7 @@
 # https://en.bitcoin.it/wiki/Protocol_documentation#tx
 defmodule CoinPusher.RawTransaction do
   alias CoinPusher.{VarInt, TxIn, TxOut}
+  use Bitwise
 
   defstruct [:version, :tx_in, :tx_out, :lock_time]
 
@@ -10,11 +11,22 @@ defmodule CoinPusher.RawTransaction do
     {:ok, tx}
   end
 
+  defp parse(version = 2, <<0x00, flags :: 8, data :: binary>>) do
+    if flags == 0x00, do: :error, else: parse(version, flags, data)
+  end
+
   defp parse(version = 2, data) do
+    flags = 0x00
+    parse(version, flags, data)
+  end
+
+  defp parse(version = 2, flags, data) do
     {:ok, tx_in_count, data} = VarInt.parse(data)
     {:ok, tx_in_list, data} = parse_list(tx_in_count, data, &TxIn.parse/1)
     {:ok, tx_out_count, data} = VarInt.parse(data)
     {:ok, tx_out_list, data} = parse_list(tx_out_count, data, &TxOut.parse/1)
+    {:ok, flags, witnesses, data} = parse_witness_flag(flags, tx_in_count, data)
+    unless flags == 0, do: :error
     <<lock_time :: unsigned-integer-32>> = data
     %CoinPusher.RawTransaction{
       version: version,
@@ -22,6 +34,22 @@ defmodule CoinPusher.RawTransaction do
       tx_out: tx_out_list,
       lock_time: lock_time
     }
+  end
+
+  defp parse_witness_flag(flags, tx_in_count, data) when band(flags, 1) == 1 do
+    {:ok, witnesses , data} = parse_witness_program(tx_in_count, data)
+    {:ok, bxor(flags, 1), witnesses, data}
+  end
+
+  defp parse_witness_program(witness_count, data) do
+    parse_list(witness_count, data, fn(data) ->
+      {:ok, stack_item_count, data} = VarInt.parse(data)
+      parse_list(stack_item_count, data, fn(data) ->
+        {:ok, size, data} = VarInt.parse(data)
+        <<program :: binary-size(size), rest :: binary>> = data
+        {:ok, program, rest}
+      end)
+    end)
   end
 
   defp parse_list(list \\ [], index \\ 0, count, data, func)
