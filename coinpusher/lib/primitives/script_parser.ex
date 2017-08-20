@@ -1,6 +1,6 @@
 defmodule CoinPusher.ScriptParser do
-  alias CoinPusher.{OP, PubKey, ScriptID}
-  use CoinPusher.OP
+  alias CoinPusher.{PubKey, ScriptID}
+  use CoinPusher.OPCODES
 
   @templates [
     # Standard tx, sender provides pubkey, receiver adds signature
@@ -129,17 +129,6 @@ defmodule CoinPusher.ScriptParser do
         {:ok, :tx_witness_v0_scripthash, [program]}
       _ ->
         :error
-    end
-  end
-
-  def can_decode_op_n(opcode) do
-    opcode == @op_0 or opcode in @op_1..@op_16
-  end
-
-  def decode_op_n(opcode) do
-    cond do
-      opcode == @op_0 -> 0
-      opcode in @op_1..@op_16 -> opcode - (@op_1 - 1)
     end
   end
 

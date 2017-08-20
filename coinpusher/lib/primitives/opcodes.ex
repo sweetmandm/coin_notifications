@@ -1,8 +1,12 @@
-defmodule CoinPusher.OP do
-  defstruct [:opcode, :data, :remainder]
-
+defmodule CoinPusher.OPCODES do
   defmacro __using__(_) do
     quote do
+      import CoinPusher.OPCODES
+
+      defmodule OP do
+        defstruct [:opcode, :data, :remainder]
+      end
+
       # push value
       @op_0 0x00
       @op_false @op_0
@@ -144,6 +148,21 @@ defmodule CoinPusher.OP do
       @op_pubkey 0xfe
 
       @op_invalidopcode 0xff
+    end
+  end
+
+  defmacro can_decode_op_n(opcode) do
+    quote do
+      unquote(opcode) == @op_0 or unquote(opcode) in @op_1..@op_16
+    end
+  end
+
+  defmacro decode_op_n(opcode) do
+    quote do
+      cond do
+        unquote(opcode) == @op_0 -> 0
+        unquote(opcode) in @op_1..@op_16 -> unquote(opcode) - (@op_1 - 1)
+      end
     end
   end
 end
