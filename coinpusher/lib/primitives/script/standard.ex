@@ -1,5 +1,5 @@
-defmodule CoinPusher.ScriptParser do
-  alias CoinPusher.{PubKey, ScriptID}
+defmodule CoinPusher.StandardTx do
+  alias CoinPusher.{PubKey, ScriptID, Script}
   use CoinPusher.OPCODES
 
   @templates [
@@ -50,57 +50,10 @@ defmodule CoinPusher.ScriptParser do
     end
   end
 
-  def is_pay_to_script_hash(pub_key) do
-      byte_size(pub_key) == 23 and
-      binary_part(pub_key, 0, 2) == <<@op_hash160, 0x14>> and
-      binary_part(pub_key, 22, 1) == <<@op_equal>>
-  end
-
-  def is_prunable(pub_key) do
-    byte_size(pub_key) >= 1 and
-    binary_part(pub_key, 0, 1) == @op_return and
-    is_push_only(binary_part(pub_key, 1, byte_size(pub_key) - 1))
-  end
-
-  def is_push_only(script) do
-    ops = get_all_opcodes(script)
-    ops |> Enum.filter(fn(op) -> op > @op_16 end) == []
-  end
-
   defp destinations_for(solutions) do
     solutions
     |> Enum.filter(&PubKey.is_valid?/1)
     |> Enum.map(&PubKey.get_id/1)
-  end
-
-  def get_op(data) do
-    case data do
-      <<size :: unsigned-integer-8, data :: binary-size(size), rest :: binary>> when size < @op_pushdata1 ->
-        {:ok, %OP{opcode: size, data: data, remainder: rest}}
-      <<@op_pushdata1, size :: unsigned-integer-8, data :: binary-size(size), rest :: binary>> ->
-        {:ok, %OP{opcode: @op_pushdata1, data: data, remainder: rest}}
-      <<@op_pushdata2, size :: unsigned-integer-16, data :: binary-size(size), rest :: binary>> ->
-        {:ok, %OP{opcode: @op_pushdata2, data: data, remainder: rest}}
-      <<@op_pushdata4, size :: unsigned-integer-32, data :: binary-size(size), rest :: binary>> ->
-        {:ok, %OP{opcode: @op_pushdata4, data: data, remainder: rest}}
-      <<opcode :: unsigned-integer-8, rest :: binary>> ->
-        {:ok, %OP{opcode: opcode, data: <<>>, remainder: rest}}
-      <<>> ->
-        {:notok, :empty}
-      _ ->
-        :error
-    end
-  end
-
-  def get_all_opcodes(ops \\ [], data)
-
-  def get_all_opcodes(ops, <<>>) do
-    ops
-  end
-
-  def get_all_opcodes(ops, data) do
-    {:ok, %OP{opcode: opcode, data: _, remainder: remainder}} = get_op(data)
-    get_all_opcodes(ops ++ [opcode], remainder)
   end
 
   def is_witness_program?(pub_key) do
@@ -134,10 +87,10 @@ defmodule CoinPusher.ScriptParser do
 
   def solver(pub_key) do
     cond do
-      is_pay_to_script_hash(pub_key) ->
+      Script.is_pay_to_script_hash(pub_key) ->
         <<_head :: binary-2, hash_bytes :: binary-20, _rest :: binary>> = pub_key
         {:ok, :tx_scripthash, [hash_bytes]}
-      is_prunable(pub_key) ->
+      Script.is_prunable(pub_key) ->
         {:ok, :tx_null_data, []}
       is_witness_program?(pub_key) ->
         get_witness_program(pub_key)
@@ -159,8 +112,8 @@ defmodule CoinPusher.ScriptParser do
   end
 
   def solve_template(template_script, script, solutions) do
-    {:ok, template_op} = get_op(template_script)
-    {:ok, script_op} = get_op(script)
+    {:ok, template_op} = Script.get_op(template_script)
+    {:ok, script_op} = Script.get_op(script)
     script = script_op.data
     cond do
       template_op.opcode == @op_pubkeys ->
@@ -200,7 +153,7 @@ defmodule CoinPusher.ScriptParser do
   end
 
   def consume_pubkey_opcodes(script, solutions \\ []) do
-    result = get_op(script)
+    result = Script.get_op(script)
     case result do
       {:ok, {_, data, _} = op} when byte_size(data) in 33..65 ->
         consume_pubkey_opcodes(op.remainder, solutions ++ [data])
