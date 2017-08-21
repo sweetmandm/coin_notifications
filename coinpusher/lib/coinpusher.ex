@@ -42,7 +42,7 @@ defmodule CoinPusher.ZMQClient do
         out = tx.tx_out |> Enum.at(0)
         script = out.pk_script
         destinations = StandardTx.extract_destinations(script)
-        {:ok, _, dests, _} = destinations
+        {:ok, _type, dests, _nRequired} = destinations
         addresses = dests |> Enum.map(&BitcoinAddress.from/1)
         Logger.info "[parsed rawtx] #{addresses}"
         {:ok, addresses}

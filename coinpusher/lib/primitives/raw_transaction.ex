@@ -26,6 +26,11 @@ defmodule CoinPusher.RawTransaction do
     {:ok, tx_out_count, data} = VarInt.parse(data)
     {:ok, tx_out_list, data} = parse_list(tx_out_count, data, &TxOut.parse/1)
     {:ok, flags, witnesses, data} = parse_witness_flag(flags, tx_in_count, data)
+    tx_in_list =
+      case Enum.empty?(witnesses) do
+        true -> tx_in_list
+        false -> add_witnesses_to_tx_in(tx_in_list, witnesses)
+      end
     unless flags == 0, do: :error
     <<lock_time :: unsigned-integer-32>> = data
     %CoinPusher.RawTransaction{
@@ -50,6 +55,19 @@ defmodule CoinPusher.RawTransaction do
         {:ok, program, rest}
       end)
     end)
+  end
+
+  defp add_witnesses_to_tx_in(tx_in_list, witnesses_list, result \\ [])
+
+  defp add_witnesses_to_tx_in([], [], result) do
+    result
+  end
+
+  defp add_witnesses_to_tx_in(tx_in_list, witnesses_list, result) do
+    [tx_in_head | tx_in_tail] = tx_in_list
+    [witnesses_head | witnesses_tail] = witnesses_list
+    result = [result | %{tx_in_head | witnesses: witnesses_head}]
+    add_witnesses_to_tx_in(tx_in_tail, witnesses_tail, result)
   end
 
   defp parse_list(list \\ [], index \\ 0, count, data, func)
