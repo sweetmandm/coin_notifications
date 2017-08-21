@@ -32,9 +32,9 @@ defmodule CoinPusher.Script do
   end
 
   def is_pay_to_script_hash(pub_key) do
-      byte_size(pub_key) == 23 and
-      binary_part(pub_key, 0, 2) == <<@op_hash160, 0x14>> and
-      binary_part(pub_key, 22, 1) == <<@op_equal>>
+    byte_size(pub_key) == 23 and
+    binary_part(pub_key, 0, 2) == <<@op_hash160, 0x14>> and
+    binary_part(pub_key, 22, 1) == <<@op_equal>>
   end
 
   def is_prunable(pub_key) do
