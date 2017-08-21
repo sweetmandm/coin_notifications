@@ -1,4 +1,6 @@
-defmodule BitcoinAddress do
+defmodule CoinPusher.BitcoinAddress do
+  alias CoinPusher.Base58
+
   def from(input) when byte_size(input) == 20 do
     net = Application.get_env(:coinpusher, :btc_net) || "regtest"
     prefix = prefix_for_net(net)

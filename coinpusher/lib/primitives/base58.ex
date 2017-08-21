@@ -1,10 +1,10 @@
-defmodule Base58 do
+defmodule CoinPusher.Base58 do
   @psz_base58 ~c(123456789ABCDEFGHJKLMNPQRSTUVWXYZabcdefghijkmnopqrstuvwxyz)
 
-  def encode(input) do
+  def encode(input) when is_binary(input) do
     int_value = :binary.decode_unsigned(input)
     result = encode(int_value, [])
-    leftpad(result, '1', leading_zeros(input))
+    leftpad(result, ?1, leading_zeros(input))
   end
 
   def encode_check(input) do

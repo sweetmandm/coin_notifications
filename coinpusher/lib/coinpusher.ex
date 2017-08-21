@@ -1,8 +1,6 @@
 defmodule CoinPusher.ZMQClient do
   require Logger
-  require Base58
-  alias CoinPusher.RawTransaction
-  alias CoinPusher.StandardTx
+  alias CoinPusher.{RawTransaction, StandardTx, BitcoinAddress}
   require IEx
 
   def init(address, port) do
