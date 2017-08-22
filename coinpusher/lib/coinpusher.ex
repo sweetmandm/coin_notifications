@@ -44,7 +44,7 @@ defmodule CoinPusher.ZMQClient do
         destinations = StandardTx.extract_destinations(script)
         {:ok, _type, dests, _nRequired} = destinations
         addresses = dests |> Enum.map(&BitcoinAddress.from/1)
-        Logger.info "[parsed rawtx] #{addresses}"
+        Logger.debug "[parsed rawtx] #{addresses}"
         {:ok, addresses}
       {:error, reason} ->
         IO.inspect reason
