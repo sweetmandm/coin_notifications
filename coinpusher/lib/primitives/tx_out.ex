@@ -1,5 +1,5 @@
 defmodule CoinPusher.TxOut do
-  alias CoinPusher.VarInt
+  alias CoinPusher.{VarInt, BitcoinAddress, StandardTx}
 
   defstruct [:value, :pk_script]
 
@@ -12,5 +12,12 @@ defmodule CoinPusher.TxOut do
       pk_script: pk_script
     }
     {:ok, tx_out, data}
+  end
+
+  def destinations(tx_out) do
+    destinations = StandardTx.extract_destinations(tx_out.pk_script)
+    {:ok, _type, dests, _nRequired} = destinations
+    addresses = dests |> Enum.map(&BitcoinAddress.from/1)
+    addresses
   end
 end

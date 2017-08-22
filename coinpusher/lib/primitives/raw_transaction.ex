@@ -5,6 +5,15 @@ defmodule CoinPusher.RawTransaction do
 
   defstruct [:version, :tx_in, :tx_out, :lock_time]
 
+  def destinations(tx) do
+    tx.tx_out |> Enum.map(fn(out) ->
+      %{
+        value: out.value,
+        destinations: out |> TxOut.destinations
+      }
+    end)
+  end
+
   def parse(data) do
     <<version :: signed-integer-little-32, rest :: binary >> = data
     tx = parse(version, rest)
@@ -44,6 +53,10 @@ defmodule CoinPusher.RawTransaction do
   defp parse_witness_flag(flags, tx_in_count, data) when band(flags, 1) == 1 do
     {:ok, witnesses , data} = parse_witness_program(tx_in_count, data)
     {:ok, bxor(flags, 1), witnesses, data}
+  end
+
+  defp parse_witness_flag(0x00, _, data) do
+    {:ok, 0x00, [], data}
   end
 
   defp parse_witness_program(witness_count, data) do

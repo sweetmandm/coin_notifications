@@ -6,9 +6,9 @@ defmodule CoinPusher.StandardTx do
     # Standard tx, sender provides pubkey, receiver adds signature
     [:tx_pubkey, <<@op_pubkey, @op_checksig>>],
     # Bitcoin address tx, sender provides hash of pubkey, receiver provides signature and pubkey
-    [tx_pubkeyhash: <<@op_dup, @op_hash160, @op_pubkeyhash, @op_equalverify, @op_checksig>>],
+    [:tx_pubkeyhash, <<@op_dup, @op_hash160, @op_pubkeyhash, @op_equalverify, @op_checksig>>],
     # Sender provides N pubkeys, receivers provides M signatures
-    [tx_multisig: <<@op_smallinteger, @op_pubkeys, @op_smallinteger, @op_checkmultisig>>]
+    [:tx_multisig, <<@op_smallinteger, @op_pubkeys, @op_smallinteger, @op_checkmultisig>>]
   ]
 
   def extract_destinations(script_pub_key) do
@@ -38,13 +38,9 @@ defmodule CoinPusher.StandardTx do
         destinations_for(solutions) |> Enum.at(0)
       :tx_pubkeyhash ->
         solution = solutions |> Enum.at(0)
-        solution = <<solution :: unsigned-integer-160>>
-        solution
       :tx_scripthash ->
         solution = solutions |> Enum.at(0)
-        solution = <<solution :: unsigned-integer-160>>
-        address = ScriptID.of(solution)
-        address
+        ScriptID.of(solution)
       _ ->
         nil
     end
@@ -131,7 +127,7 @@ defmodule CoinPusher.StandardTx do
       template_op.opcode == script_op.opcode and template_op.data == script_op.data ->
         solve_template(template_op.remainder, script_op.remainder, solutions)
       true ->
-        {:error, :tx_nonstandard}
+        :no_match
     end
   end
 
