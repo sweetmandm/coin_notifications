@@ -1,3 +1,4 @@
 ---
 - name: Restart bitcoind
   command: bash -lc "sudo monit restart bitcoind"
+  ignore_errors: yes

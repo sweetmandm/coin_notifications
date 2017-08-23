@@ -4,5 +4,7 @@
 use Mix.Config
 
 config :coinpusher,
-  address: "{{ btc_opts.zmq.addr }}",
-  port: "{{ btc_opts.zmq.port }}"
+  zmq_address: "{{ btc_opts.zmq.addr }}",
+  zmq_port: "{{ btc_opts.zmq.port }}",
+  rpc_user: "{{ rpc.username }}",
+  rpc_pass: "{{ rpc.password }}"
