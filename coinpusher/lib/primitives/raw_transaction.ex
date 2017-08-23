@@ -14,6 +14,17 @@ defmodule CoinPusher.RawTransaction do
     end)
   end
 
+  def sources(_tx) do
+    []
+  end
+
+  def info(tx) do
+    %{
+      sources: sources(tx),
+      destinations: destinations(tx)
+    }
+  end
+
   def parse(data) do
     <<version :: signed-integer-little-32, rest :: binary >> = data
     tx = parse(version, rest)

@@ -37,7 +37,7 @@ defmodule CoinPusher.StandardTx do
       :tx_pubkey ->
         destinations_for(solutions) |> Enum.at(0)
       :tx_pubkeyhash ->
-        solution = solutions |> Enum.at(0)
+        solutions |> Enum.at(0)
       :tx_scripthash ->
         solution = solutions |> Enum.at(0)
         ScriptID.of(solution)
@@ -110,10 +110,9 @@ defmodule CoinPusher.StandardTx do
   def solve_template(template_script, script, solutions) do
     {:ok, template_op} = Script.get_op(template_script)
     {:ok, script_op} = Script.get_op(script)
-    script = script_op.data
     cond do
       template_op.opcode == @op_pubkeys ->
-        {:ok, remaining_script, pubkeys} = consume_pubkey_opcodes(script)
+        {:ok, remaining_script, pubkeys} = consume_pubkey_opcodes(script_op.remainder)
         solve_template(template_op.remainder, remaining_script, solutions ++ pubkeys)
       template_op.opcode == @op_pubkey ->
         solution = if byte_size(script_op.data) in 33..65, do: [script_op.data], else: []

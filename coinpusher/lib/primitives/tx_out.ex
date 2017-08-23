@@ -16,8 +16,9 @@ defmodule CoinPusher.TxOut do
 
   def destinations(tx_out) do
     destinations = StandardTx.extract_destinations(tx_out.pk_script)
-    {:ok, _type, dests, _nRequired} = destinations
-    addresses = dests |> Enum.map(&BitcoinAddress.from/1)
-    addresses
+    {:ok, type, dests, _nRequired} = destinations
+    Enum.map(dests, fn(dest) ->
+      BitcoinAddress.from(dest, type)
+    end)
   end
 end
