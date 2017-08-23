@@ -1,6 +1,6 @@
 defmodule CoinPusher.ZMQClient do
   require Logger
-  alias CoinPusher.{RawTransaction, TxOut}
+  alias CoinPusher.{RawTransaction}
 
   def init(address, port) do
     pid = spawn_listener(address, port)

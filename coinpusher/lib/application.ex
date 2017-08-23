@@ -19,5 +19,7 @@ defmodule CoinPusher.Application do
 
   defp zmq_port do
     Application.get_env(:coinpusher, :zmq_port)
+    |> Integer.parse
+    |> elem(0)
   end
 end
