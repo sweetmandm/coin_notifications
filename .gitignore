@@ -3,4 +3,4 @@
 .vagrant
 *.log
 ansible/*.retry
-coinpusher/config/zmq_config.exs
+coinpusher/config/notifier_config.exs
