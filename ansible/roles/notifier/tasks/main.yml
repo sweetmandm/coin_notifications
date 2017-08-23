@@ -1,5 +1,6 @@
 ---
-- name: Install ZMQ config
+- name: Install notifier config
+  remote_user: "{{ deployer_user.name }}"
   template:
-    src: zmq_config.exs.j2
-    dest: {{ app_path }}/coinpusher/config/zmq_config.exs
+    src: notifier_config.exs.j2
+    dest: "{{ app_path }}/coinpusher/config/notifier_config.exs"

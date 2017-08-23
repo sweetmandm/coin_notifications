@@ -4,6 +4,7 @@
   hosts: all
   roles:
     - include_env_vars
+    - rpc_setup
 
 - name: Apply common configuration
   hosts: all
@@ -30,3 +31,4 @@
   remote_user: root
   roles:
     - elixir
+    - notifier

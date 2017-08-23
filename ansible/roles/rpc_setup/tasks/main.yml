@@ -1,0 +1,15 @@
+---
+- name: Generate RPC Credentials
+  rpc_credentials:
+    force: "{{ force_rpc_creds | default(False) }}"
+  delegate_to: localhost
+  register: rpcauth
+
+- name: Include rpc auth
+  include_vars: "{{ rpcauth.file }}"
+
+- name: Restart RPC services
+  command: /bin/true
+  when: rpcauth.changed
+  notify:
+    - Restart bitcoind

@@ -8,8 +8,11 @@ btc_opts:
     addr: 127.0.0.1
     port: 28332
 
+rpc_port: 8332
+
 allowed_ports:
   - "{{ btc_opts.port }}"
+  - "{{ rpc_port }}"
 
 deployer_user:
   name: deployer
