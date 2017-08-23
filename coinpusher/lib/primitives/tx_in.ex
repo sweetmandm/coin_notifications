@@ -2,7 +2,7 @@
 defmodule CoinPusher.TxIn do
   alias CoinPusher.{OutPoint, VarInt}
 
-  defstruct [:previous_output, :signature_script, :sequence]
+  defstruct [:previous_output, :signature_script, :sequence, :witnesses]
 
   def parse(data) do
     {:ok, out_point, data} = OutPoint.parse(data)
@@ -12,7 +12,8 @@ defmodule CoinPusher.TxIn do
     tx_in = %CoinPusher.TxIn{
       previous_output: out_point,
       signature_script: sig,
-      sequence: sequence
+      sequence: sequence,
+      witnesses: nil
     }
     {:ok, tx_in, data}
   end

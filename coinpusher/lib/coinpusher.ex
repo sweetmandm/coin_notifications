@@ -1,7 +1,6 @@
 defmodule CoinPusher.ZMQClient do
-  require IEx
   require Logger
-  alias CoinPusher.RawTransaction
+  alias CoinPusher.{RawTransaction, TxOut}
 
   def init(address, port) do
     pid = spawn_listener(address, port)
@@ -39,8 +38,9 @@ defmodule CoinPusher.ZMQClient do
   defp handle(["rawtx", data, _]) do
     case RawTransaction.parse(data) do
       {:ok, tx} ->
-        IEx.pry
-        :ok
+        addresses = RawTransaction.info(tx)
+        Logger.debug "[parsed rawtx] #{inspect(addresses)}"
+        {:ok, addresses}
       {:error, reason} ->
         IO.inspect reason
     end
