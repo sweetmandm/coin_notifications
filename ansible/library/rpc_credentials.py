@@ -41,39 +41,22 @@ def generate_new_credentials(dest):
     username = base64.urlsafe_b64encode(os.urandom(32))
     password = base64.urlsafe_b64encode(os.urandom(32))
 
-    #Create 16 byte hex salt
-    salt_sequence = [cryptogen.randrange(256) for i in range(16)]
-    hexseq = list(map(hex, salt_sequence))
-    salt = "".join([x[2:] for x in hexseq])
-
-    digestmod = hashlib.sha256
-
-    if sys.version_info.major >= 3:
-        password = password.decode('utf-8')
-        digestmod = 'SHA256'
-
-    m = hmac.new(bytearray(salt, 'utf-8'), bytearray(password, 'utf-8'), digestmod)
-    result = m.hexdigest()
-    
-    rpcauth = username+":"+salt+"$"+result
-
-    write_file(dest, username, password, rpcauth)
+    write_file(dest, username, password)
 
 
-def write_file(dest, username, password, rpcauth):
+def write_file(dest, username, password):
     authfile = open(dest, "w")
-    text = auth_vars_text(username, password, rpcauth)
+    text = auth_vars_text(username, password)
     authfile.write(text)
     authfile.close()
 
 
-def auth_vars_text(username, password, rpcauth):
+def auth_vars_text(username, password):
     return """
 ---
 rpc_username: %s
 rpc_password: %s
-rpc_auth: %s
-""" % (username, password, rpcauth)
+""" % (username, password)
 
 
 if __name__ == '__main__':

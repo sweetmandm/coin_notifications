@@ -30,7 +30,8 @@ DAEMON_ARGS="\
   -zmqpubrawblock=$ZMQ \
   -zmqpubrawtx=$ZMQ \
   -rpcallowip={{ rpc_client_ip }} \
-  -rpcauth={{ rpc_auth }} \
+  -rpcuser={{ rpc_username }} \
+  -rpcpassword={{ rpc_password }} \
   -rpcport={{ rpc_port }} \
   {{ btc_opts.extras }} \
   -pid=$PIDFILE"
