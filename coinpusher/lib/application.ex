@@ -12,6 +12,14 @@ defmodule CoinPusher.Application do
     Supervisor.start_link(children, opts)
   end
 
+  defp rpc_address do
+    zmq_address()
+  end
+
+  defp rpc_port do
+    18332
+  end
+
   defp zmq_address do
     Application.get_env(:coinpusher, :zmq_address)
       |> to_charlist

@@ -3,11 +3,12 @@ btc_opts:
   net: "-regtest"
   port: 18333
   datadir: "{{ datadir }}"
-  extras: "-prune"
+  extras: ""
   zmq:
     addr: 127.0.0.1
     port: 28332
 
+rpc_client_ip: "127.0.0.1"
 rpc_port: 18332
 
 allowed_ports:

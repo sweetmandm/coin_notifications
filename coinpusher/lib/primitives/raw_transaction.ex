@@ -1,6 +1,6 @@
 # https://en.bitcoin.it/wiki/Protocol_documentation#tx
 defmodule CoinPusher.RawTransaction do
-  alias CoinPusher.{VarInt, TxIn, TxOut}
+  alias CoinPusher.{VarInt, TxIn, TxOut, RPC, TxId}
   use Bitwise
 
   defstruct [:version, :tx_in, :tx_out, :lock_time]
@@ -14,8 +14,10 @@ defmodule CoinPusher.RawTransaction do
     end)
   end
 
-  def sources(_tx) do
-    []
+  def sources(tx) do
+    tx 
+    |> get_full_inputs 
+    |> Enum.map(&TxOut.destinations/1)
   end
 
   def info(tx) do
@@ -23,6 +25,20 @@ defmodule CoinPusher.RawTransaction do
       sources: sources(tx),
       destinations: destinations(tx)
     }
+  end
+
+  def get_full_inputs(tx) do
+    tx.tx_in
+    |> Enum.filter(fn (tx_in) -> !TxIn.is_coinbase?(tx_in) end)
+    |> Enum.map(fn (tx_in) ->
+      tx_id = tx_in.previous_output.hash |> TxId.to_string
+      {:ok, result} = RPC.get_raw_transaction(tx_id)
+      {:ok, raw_tx} = result 
+                      |> Map.get("result") 
+                      |> Base.decode16(case: :lower)
+      {:ok, tx} = raw_tx |> CoinPusher.RawTransaction.parse
+      tx.tx_out |> Enum.at(tx_in.previous_output.index)
+    end)
   end
 
   def parse(data) do
@@ -90,7 +106,11 @@ defmodule CoinPusher.RawTransaction do
   defp add_witnesses_to_tx_in(tx_in_list, witnesses_list, result) do
     [tx_in_head | tx_in_tail] = tx_in_list
     [witnesses_head | witnesses_tail] = witnesses_list
-    result = [result | %{tx_in_head | witnesses: witnesses_head}]
+    result = if Enum.empty?(result) do
+      [%{tx_in_head | witnesses: witnesses_head}]
+    else
+      [result | %{tx_in_head | witnesses: witnesses_head}]
+    end
     add_witnesses_to_tx_in(tx_in_tail, witnesses_tail, result)
   end
 

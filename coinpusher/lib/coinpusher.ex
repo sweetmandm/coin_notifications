@@ -39,7 +39,7 @@ defmodule CoinPusher.ZMQClient do
     case RawTransaction.parse(data) do
       {:ok, tx} ->
         addresses = RawTransaction.info(tx)
-        Logger.debug "[parsed rawtx] #{inspect(addresses)}"
+        Logger.debug "[transaction info] #{inspect(addresses)}"
         {:ok, addresses}
       {:error, reason} ->
         IO.inspect reason
