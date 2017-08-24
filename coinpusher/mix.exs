@@ -15,7 +15,7 @@ defmodule CoinPusher.Mixfile do
 
   def application do
     [
-      applications: [:jsonrpc2, :poison, :shackle],
+      applications: [:poison, :hackney],
       mod: {CoinPusher.Application, []},
       extra_applications: [:logger]
     ]
@@ -24,9 +24,8 @@ defmodule CoinPusher.Mixfile do
   defp deps do
     [
       {:chumak, github: "zeromq/chumak"},
-      {:jsonrpc2, "~> 1.0"},
       {:poison, "~> 3.1"},
-      {:shackle, "~> 0.5"},
+      {:hackney, "~> 1.7"},
       {:espec, "~> 1.4.5", only: :test}
     ]
   end

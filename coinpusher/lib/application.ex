@@ -4,8 +4,6 @@ defmodule CoinPusher.Application do
   def start(_type, _args) do
     import Supervisor.Spec
 
-    CoinPusher.RPC.start(rpc_address(), rpc_port())
-
     children = [
       worker(CoinPusher.ZMQClient, [zmq_address(), zmq_port()], function: :init)
     ]
