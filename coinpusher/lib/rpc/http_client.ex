@@ -12,10 +12,9 @@ defmodule CoinPusher.RPC.HTTPClient do
     response = :hackney.request(http_method, url, headers, payload, [])
     with(
       {:ok, 200, _headers, body_ref} = response,
-      {:ok, body} = :hackney.body(body_ref),
-      {:ok, result} = deserialize_response(body)
+      {:ok, body} = :hackney.body(body_ref)
     ) do
-      result
+      deserialize_response(body)
     else
       {:ok, status_code, headers, body_ref} ->
         {:error, {:request_failed, status_code, headers, :hackney.body(body_ref)}}

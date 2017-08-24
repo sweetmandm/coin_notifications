@@ -1,7 +1,6 @@
 defmodule CoinPusher.RPC do
   alias CoinPusher.RPC.HTTPClient
 
-  #@type rpc_result %{error: any, id: integer, result: HTTPClient.json}
   @type rpc_result :: %{error: any, id: integer, result: HTTPClient.json}
 
   @spec get_raw_transaction(String.t) :: rpc_result
