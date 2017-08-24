@@ -70,10 +70,9 @@ def write_file(dest, username, password, rpcauth):
 def auth_vars_text(username, password, rpcauth):
     return """
 ---
-rpc:
-  username: %s
-  password: %s
-  auth: %s
+rpc_username: %s
+rpc_password: %s
+rpc_auth: %s
 """ % (username, password, rpcauth)
 
 

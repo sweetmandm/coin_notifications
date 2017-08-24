@@ -29,7 +29,8 @@ DAEMON_ARGS="\
   -zmqpubhashtx=$ZMQ \
   -zmqpubrawblock=$ZMQ \
   -zmqpubrawtx=$ZMQ \
-  -rpcauth={{ rpc.auth }} \
+  -rpcallowip={{ rpc_client_ip }} \
+  -rpcauth={{ rpc_auth }} \
   -rpcport={{ rpc_port }} \
   {{ btc_opts.extras }} \
   -pid=$PIDFILE"
