@@ -2,6 +2,16 @@ defmodule CoinPusher.StandardTx do
   alias CoinPusher.{PubKey, ScriptID, Script}
   use CoinPusher.OPCODES
 
+  @type tx_type :: :tx_pubkey
+                 | :tx_pubkeyhash
+                 | :tx_multisig
+                 | :tx_null_data
+                 | :tx_nonstandard
+                 | :tx_scripthash
+
+  @type witness_type :: :tx_witness_v0_keyhash
+                      | :tx_witness_v0_scripthash
+
   @templates [
     # Standard tx, sender provides pubkey, receiver adds signature
     [:tx_pubkey, <<@op_pubkey, @op_checksig>>],
@@ -11,6 +21,7 @@ defmodule CoinPusher.StandardTx do
     [:tx_multisig, <<@op_smallinteger, @op_pubkeys, @op_smallinteger, @op_checkmultisig>>]
   ]
 
+  @spec extract_destinations(binary) :: {:ok, tx_type, list(binary), integer} | {:error, atom}
   def extract_destinations(script_pub_key) do
     {:ok, type, solutions} = solver(script_pub_key)
     case type do
@@ -21,37 +32,45 @@ defmodule CoinPusher.StandardTx do
         destinations = destinations_for(solutions)
         {:ok, type, destinations, nRequired}
       _ ->
-        address = extract_destination(type, solutions)
-        {:ok, type, [address], 1}
+        case extract_destination(type, solutions) do
+          {:ok, address} -> {:ok, type, [address], 1}
+          :error -> {:ok, type, [], 1}
+        end
     end
   end
 
+  @spec extract_destination(binary) :: {:ok, binary} | :error
   def extract_destination(script_pub_key) do
     {:ok, type, solutions} = solver(script_pub_key)
     address = extract_destination(type, solutions)
     {:ok, type, address}
   end
 
+  @spec extract_destination(atom, list) :: {:ok, binary} | :error
   defp extract_destination(type, solutions) do
     case type do
       :tx_pubkey ->
-        destinations_for(solutions) |> Enum.at(0)
+        {:ok, destinations_for(solutions) |> Enum.at(0)}
       :tx_pubkeyhash ->
-        solutions |> Enum.at(0)
+        {:ok, solutions |> Enum.at(0)}
       :tx_scripthash ->
         solution = solutions |> Enum.at(0)
-        ScriptID.of(solution)
+        {:ok, ScriptID.of(solution)}
+      :tx_nonstandard ->
+        :error
       _ ->
-        nil
+        :error
     end
   end
 
+  @spec destinations_for(list(binary)) :: list(binary)
   defp destinations_for(solutions) do
     solutions
     |> Enum.filter(&PubKey.is_valid?/1)
     |> Enum.map(&PubKey.get_id/1)
   end
 
+  @spec destinations_for(list(binary)) :: boolean
   def is_witness_program?(pub_key) do
     opcode = binary_part(pub_key, 0, 1)
     cond do
@@ -66,6 +85,7 @@ defmodule CoinPusher.StandardTx do
     end
   end
 
+  @spec get_witness_program(binary) :: {:ok, witness_type, list(binary)}
   def get_witness_program(pub_key) do
     opcode = binary_part(pub_key, 0, 1)
     version = decode_op_n(opcode)
@@ -81,6 +101,7 @@ defmodule CoinPusher.StandardTx do
     end
   end
 
+  @spec solver(binary) :: {:ok, tx_type | witness_type, list(binary)}
   def solver(pub_key) do
     cond do
       Script.is_pay_to_script_hash(pub_key) ->
@@ -95,6 +116,7 @@ defmodule CoinPusher.StandardTx do
     end
   end
 
+  @spec solve_template(binary, binary, list(binary)) :: {:ok, list(binary)} | :no_match
   def solve_template(template_script, script, solutions \\ [])
 
   def solve_template(<<>>, <<>>, solutions) do
@@ -130,6 +152,7 @@ defmodule CoinPusher.StandardTx do
     end
   end
 
+  @spec check_templates(list(binary), binary, list(binary) | :no_match) :: {:ok, tx_type, list(binary)}
   def check_templates(templates \\ @templates, script, solutions \\ :no_match)
 
   def check_templates([], _script, :no_match), do: {:ok, :tx_nonstandard, []}
@@ -147,6 +170,7 @@ defmodule CoinPusher.StandardTx do
     end
   end
 
+  @spec consume_pubkey_opcodes(binary, list(binary)) :: {:ok, binary, list(binary)}
   def consume_pubkey_opcodes(script, solutions \\ []) do
     result = Script.get_op(script)
     case result do

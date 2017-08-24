@@ -2,7 +2,7 @@
 defmodule CoinPusher.OutPoint do
   defstruct [:hash, :index]
 
-  def parse(<<hash :: binary-size(32), index :: unsigned-integer-32, rest :: binary>>) do
+  def parse(<<hash :: binary-size(32), index :: unsigned-integer-little-32, rest :: binary>>) do
     out_point = %CoinPusher.OutPoint{
       hash: hash,
       index: index

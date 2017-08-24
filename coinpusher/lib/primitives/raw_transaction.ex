@@ -106,7 +106,11 @@ defmodule CoinPusher.RawTransaction do
   defp add_witnesses_to_tx_in(tx_in_list, witnesses_list, result) do
     [tx_in_head | tx_in_tail] = tx_in_list
     [witnesses_head | witnesses_tail] = witnesses_list
-    result = [result | %{tx_in_head | witnesses: witnesses_head}]
+    result = if Enum.empty?(result) do
+      [%{tx_in_head | witnesses: witnesses_head}]
+    else
+      [result | %{tx_in_head | witnesses: witnesses_head}]
+    end
     add_witnesses_to_tx_in(tx_in_tail, witnesses_tail, result)
   end
 
