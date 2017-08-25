@@ -50,3 +50,20 @@ defmodule CoinPusher.TransactionInfo do
     end)
   end
 end
+
+defimpl Inspect, for: CoinPusher.TransactionInfo do
+  import Inspect.Algebra
+  def inspect(info, _opts) do
+    sources = multiline(info.sources )
+    dests = multiline(info.destinations)
+    concat ["tx:\n",
+            "[sources]      #{sources}\n",
+            "[destinations] #{dests}"]
+  end
+
+  defp multiline(list) do
+    list
+    |> Enum.map(fn(source) -> inspect(source) end)
+    |> Enum.join("\n               ")
+  end
+end

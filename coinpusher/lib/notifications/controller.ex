@@ -36,9 +36,7 @@ defmodule CoinPusher.NotificationsController do
 
   defp send_notifications!(transaction, state) do
     info = TransactionInfo.from(transaction)
-
-    Logger.debug "[transaction sources]      #{inspect(info.sources)}"
-    Logger.debug "[transaction destinations] #{inspect(info.destinations)}"
+    Logger.debug "#{inspect(info)}"
 
     info.sources |> Enum.each(fn(source) ->
       send_notifications_for_source!(transaction, source, state)
