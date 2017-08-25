@@ -1,4 +1,3 @@
-# https://en.bitcoin.it/wiki/Protocol_documentation#Variable_length_integer
 defmodule CoinPusher.VarInt do
   def parse(<<0xFF, value :: unsigned-integer-little-64, rest :: binary>>) do
     {:ok, value, rest}

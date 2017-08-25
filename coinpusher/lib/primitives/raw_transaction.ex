@@ -1,4 +1,3 @@
-# https://en.bitcoin.it/wiki/Protocol_documentation#tx
 defmodule CoinPusher.RawTransaction do
   alias CoinPusher.{VarInt, TxIn, TxOut}
   use Bitwise

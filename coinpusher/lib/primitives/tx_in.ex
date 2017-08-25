@@ -1,4 +1,3 @@
-# https://en.bitcoin.it/wiki/Protocol_documentation#tx
 defmodule CoinPusher.TxIn do
   alias CoinPusher.{OutPoint, VarInt}
 
