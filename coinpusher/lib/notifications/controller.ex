@@ -6,7 +6,6 @@ defmodule CoinPusher.NotificationsController do
 
   def init(listener_table_name) do
     state = AddressListeners.init(listener_table_name)
-    Logger.debug "Address Listeners created: #{state}"
     {:ok, state}
   end
 
