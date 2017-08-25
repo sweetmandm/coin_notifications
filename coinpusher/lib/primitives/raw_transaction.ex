@@ -5,42 +5,6 @@ defmodule CoinPusher.RawTransaction do
 
   defstruct [:version, :tx_in, :tx_out, :lock_time]
 
-  def destinations(tx) do
-    tx.tx_out |> Enum.map(fn(out) ->
-      %{
-        value: out.value,
-        destinations: out |> TxOut.destinations
-      }
-    end)
-  end
-
-  def sources(tx) do
-    tx 
-    |> get_full_inputs 
-    |> Enum.map(&TxOut.destinations/1)
-  end
-
-  def info(tx) do
-    %{
-      sources: sources(tx),
-      destinations: destinations(tx)
-    }
-  end
-
-  def get_full_inputs(tx) do
-    tx.tx_in
-    |> Enum.filter(fn (tx_in) -> !TxIn.is_coinbase?(tx_in) end)
-    |> Enum.map(fn (tx_in) ->
-      tx_id = tx_in.previous_output.hash |> TxId.to_string
-      {:ok, result} = RPC.get_raw_transaction(tx_id)
-      {:ok, raw_tx} = result 
-                      |> Map.get("result") 
-                      |> Base.decode16(case: :lower)
-      {:ok, tx} = raw_tx |> CoinPusher.RawTransaction.parse
-      tx.tx_out |> Enum.at(tx_in.previous_output.index)
-    end)
-  end
-
   def parse(data) do
     <<version :: signed-integer-little-32, rest :: binary >> = data
     tx = parse(version, rest)

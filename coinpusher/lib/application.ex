@@ -5,6 +5,7 @@ defmodule CoinPusher.Application do
     import Supervisor.Spec
 
     children = [
+      worker(CoinPusher.NotificationsController, [:listeners]),
       worker(CoinPusher.ZMQClient, [zmq_address(), zmq_port()], function: :init)
     ]
 
