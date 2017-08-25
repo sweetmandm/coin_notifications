@@ -1,6 +1,6 @@
 # https://en.bitcoin.it/wiki/Protocol_documentation#tx
 defmodule CoinPusher.RawTransaction do
-  alias CoinPusher.{VarInt, TxIn, TxOut, RPC, TxId}
+  alias CoinPusher.{VarInt, TxIn, TxOut}
   use Bitwise
 
   defstruct [:version, :tx_in, :tx_out, :lock_time]

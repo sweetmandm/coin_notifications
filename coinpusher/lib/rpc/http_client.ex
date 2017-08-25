@@ -15,13 +15,6 @@ defmodule CoinPusher.RPC.HTTPClient do
       {:ok, body} = :hackney.body(body_ref)
     ) do
       deserialize_response(body)
-    else
-      {:ok, status_code, headers, body_ref} ->
-        {:error, {:request_failed, status_code, headers, :hackney.body(body_ref)}}
-      {:ok, status_code, headers} ->
-        {:error, {:request_failed, status_code, headers}}
-      {:error, reason} ->
-        {:error, reason}
     end
   end
 
