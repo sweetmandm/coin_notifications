@@ -1,8 +1,8 @@
 ## Coin Notifications
 
-The goal of this project is to send SMS/email/iOS push notifications when a transaction happens on a bitcoin wallet that you're interested in.
+This application listens for transaction events from `bitcoind` and sends out notifications when a transaction happens on a bitcoin address that you're interested in.
 
-It's a WIP, but the Ansible roles are configured to provision a server, start up bitcoind with options configurable by environment, and make sure it stays running.
+It has the ability to parse raw transactions and extract addresses from transaction scripts in order to minimize RPC calls to the bitcoin daemon.
 
 ## Dev
 
