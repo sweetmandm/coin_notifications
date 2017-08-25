@@ -28,7 +28,7 @@ defmodule CoinPusher.ZMQClient do
 
   defp loop(socket) do
     {:ok, message} = :chumak.recv_multipart(socket)
-    handle(message)
+    spawn_link(fn -> handle(message) end)
     loop(socket)
   end
 
