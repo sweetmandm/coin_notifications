@@ -38,7 +38,7 @@ defmodule CoinPusher.TransactionInfo do
 
   def get_full_inputs(tx) do
     tx.tx_in
-    |> Enum.filter(fn(tx_in) -> !TxIn.is_coinbase?(tx_in) end)
+    |> Enum.reject(&TxIn.is_coinbase?/1)
     |> Enum.map(fn(tx_in) ->
       tx_id = tx_in.previous_output.hash |> TxId.to_string
       {:ok, result} = RPC.get_raw_transaction(tx_id)
