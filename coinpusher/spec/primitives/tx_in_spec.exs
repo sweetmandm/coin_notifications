@@ -19,7 +19,7 @@ defmodule TxInSpec do
 
     it "parses the out_point" do
       expect subject().previous_output.hash |> to(eq <<1 :: size(256)>>)
-      expect subject().previous_output.index |> to(eq 0x88776655)
+      expect subject().previous_output.index |> to(eq 0x55667788)
     end
 
     it "parses the signature script" do
