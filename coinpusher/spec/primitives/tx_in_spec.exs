@@ -27,7 +27,7 @@ defmodule TxInSpec do
     end
 
     it "parses the sequence" do
-      expect subject().sequence |> to(eq 0xFF000000)
+      expect subject().sequence |> to(eq 0x000000FF)
     end
 
     it "returns the remainder" do

@@ -7,7 +7,7 @@ defmodule CoinPusher.TxIn do
     {:ok, out_point, data} = OutPoint.parse(data)
     {:ok, script_length, data} = VarInt.parse(data)
     <<sig :: binary-size(script_length), data :: binary>> = data
-    <<sequence :: unsigned-integer-32, data :: binary>> = data
+    <<sequence :: unsigned-little-32, data :: binary>> = data
     tx_in = %CoinPusher.TxIn{
       previous_output: out_point,
       signature_script: sig,

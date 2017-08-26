@@ -3,15 +3,15 @@ defmodule CoinPusher.Script do
 
   def get_op(data) do
     case data do
-      <<size :: unsigned-integer-8, data :: binary-size(size), rest :: binary>> when size < @op_pushdata1 ->
+      <<size :: unsigned-8, data :: binary-size(size), rest :: binary>> when size < @op_pushdata1 ->
         {:ok, %OP{opcode: size, data: data, remainder: rest}}
-      <<@op_pushdata1, size :: unsigned-integer-8, data :: binary-size(size), rest :: binary>> ->
+      <<@op_pushdata1, size :: unsigned-8, data :: binary-size(size), rest :: binary>> ->
         {:ok, %OP{opcode: @op_pushdata1, data: data, remainder: rest}}
-      <<@op_pushdata2, size :: unsigned-integer-16, data :: binary-size(size), rest :: binary>> ->
+      <<@op_pushdata2, size :: unsigned-little-16, data :: binary-size(size), rest :: binary>> ->
         {:ok, %OP{opcode: @op_pushdata2, data: data, remainder: rest}}
-      <<@op_pushdata4, size :: unsigned-integer-32, data :: binary-size(size), rest :: binary>> ->
+      <<@op_pushdata4, size :: unsigned-little-32, data :: binary-size(size), rest :: binary>> ->
         {:ok, %OP{opcode: @op_pushdata4, data: data, remainder: rest}}
-      <<opcode :: unsigned-integer-8, rest :: binary>> ->
+      <<opcode :: unsigned-8, rest :: binary>> ->
         {:ok, %OP{opcode: opcode, data: <<>>, remainder: rest}}
       <<>> ->
         {:notok, :empty}

@@ -5,7 +5,7 @@ defmodule CoinPusher.RawTransaction do
   defstruct [:version, :tx_in, :tx_out, :lock_time]
 
   def parse(data) do
-    <<version :: signed-integer-little-32, rest :: binary >> = data
+    <<version :: signed-little-32, rest :: binary >> = data
     tx = parse(version, rest)
     {:ok, tx}
   end
@@ -31,7 +31,7 @@ defmodule CoinPusher.RawTransaction do
         false -> add_witnesses_to_tx_in(tx_in_list, witnesses)
       end
     unless flags == 0, do: :error
-    <<lock_time :: unsigned-integer-32>> = data
+    <<lock_time :: unsigned-little-32>> = data
     %CoinPusher.RawTransaction{
       version: version,
       tx_in: tx_in_list,
