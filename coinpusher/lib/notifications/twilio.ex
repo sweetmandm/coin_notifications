@@ -5,7 +5,7 @@ defmodule CoinPusher.Twilio do
     payload = {:form, ["From": from(), "To": to, "Body": body, "Media": media]}
     response = :hackney.request(:post, url(), [], payload, options())
     with(
-      {:ok, status, headers, body_ref} = response,
+      {:ok, _status, _headers, body_ref} = response,
       {:ok, body} = :hackney.body(body_ref)
     ) do
       {:ok, _} = Poison.decode(body)
