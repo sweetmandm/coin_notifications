@@ -1,5 +1,4 @@
 defmodule RawTransactionSpec do
-  require IEx
   use ESpec
 
   let :result, do: CoinPusher.RawTransaction.parse(data())
@@ -16,6 +15,10 @@ defmodule RawTransactionSpec do
         "1D420E9E244261695B9B001B488AC30BEFA02000000001976A91498DF0D25F4AC4C7D" <>
         "C3CC225E749584F45F8B190B88ACC8020000"
       ) |> elem(1)
+    end
+
+    it "parses the version" do
+      expect subject().version |> to(eq 2)
     end
 
     it "parses the lock time" do
@@ -41,6 +44,26 @@ defmodule RawTransactionSpec do
       it "parses the tx_in" do
         expect subject().tx_in |> to(have_count 1)
         expect subject().tx_in |> to(match_list [expected_tx_in()])
+      end
+    end
+
+    describe "the tx_out" do
+      let :expected_tx_out do
+        [%CoinPusher.TxOut{
+          value: 100000000,
+          pk_script: "76A914CC33BBDEC70A5A81D420E9E244261695B9B001B488AC"
+            |> Base.decode16 |> elem(1)
+        },
+         %CoinPusher.TxOut{
+           value: 49987120,
+           pk_script: "76A91498DF0D25F4AC4C7DC3CC225E749584F45F8B190B88AC"
+             |> Base.decode16 |> elem(1)
+         }]
+      end
+
+      it "parses the tx_in" do
+        expect subject().tx_out |> to(have_count 2)
+        expect subject().tx_out |> to(match_list expected_tx_out())
       end
     end
   end
