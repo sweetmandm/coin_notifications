@@ -70,7 +70,7 @@ defmodule CoinPusher.StandardTx do
     |> Enum.map(&PubKey.get_id/1)
   end
 
-  @spec destinations_for(list(binary)) :: boolean
+  @spec is_witness_program?(list(binary)) :: boolean
   def is_witness_program?(pub_key) do
     opcode = binary_part(pub_key, 0, 1)
     cond do
@@ -85,7 +85,7 @@ defmodule CoinPusher.StandardTx do
     end
   end
 
-  @spec get_witness_program(binary) :: {:ok, witness_type, list(binary)}
+  @spec get_witness_program(binary) :: {:ok, witness_type, list(binary)} | :error
   def get_witness_program(pub_key) do
     opcode = binary_part(pub_key, 0, 1)
     version = decode_op_n(opcode)
