@@ -2,7 +2,6 @@ defmodule CoinPusher.NotificationsController do
   use GenServer
   require Logger
   alias CoinPusher.{RawTransaction, AddressListeners, Contact, TransactionInfo}
-  require IEx
 
   def init(listener_table_name) do
     state = AddressListeners.init(listener_table_name)

@@ -1,13 +1,14 @@
 defmodule CoinPusher.RawTransaction do
   alias CoinPusher.{VarInt, TxIn, TxOut}
+  import CoinPusher.ParseList
   use Bitwise
 
   defstruct [:version, :tx_in, :tx_out, :lock_time]
 
+  @spec parse(binary) :: {:ok, %__MODULE__{}, binary}
   def parse(data) do
     <<version :: signed-little-32, rest :: binary >> = data
-    tx = parse(version, rest)
-    {:ok, tx}
+    parse(version, rest)
   end
 
   defp parse(version = 2, <<0x00, flags :: 8, data :: binary>>) do
@@ -31,13 +32,14 @@ defmodule CoinPusher.RawTransaction do
         false -> add_witnesses_to_tx_in(tx_in_list, witnesses)
       end
     unless flags == 0, do: :error
-    <<lock_time :: unsigned-little-32>> = data
-    %CoinPusher.RawTransaction{
+    <<lock_time :: unsigned-little-32, rest :: binary>> = data
+    tx = %CoinPusher.RawTransaction{
       version: version,
       tx_in: tx_in_list,
       tx_out: tx_out_list,
       lock_time: lock_time
     }
+    {:ok, tx, rest}
   end
 
   defp parse_witness_flag(flags, tx_in_count, data) when band(flags, 1) == 1 do
@@ -75,17 +77,6 @@ defmodule CoinPusher.RawTransaction do
       [result | %{tx_in_head | witnesses: witnesses_head}]
     end
     add_witnesses_to_tx_in(tx_in_tail, witnesses_tail, result)
-  end
-
-  defp parse_list(list \\ [], index \\ 0, count, data, func)
-
-  defp parse_list(list, max, max, data, _func) do
-    {:ok, list, data}
-  end
-
-  defp parse_list(list, index, count, data, func) do
-    {:ok, item, data} = func.(data)
-    parse_list(list ++ [item], index + 1, count, data, func)
   end
 
   def is_coinbase?(raw_transaction) do
