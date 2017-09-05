@@ -53,12 +53,6 @@ defmodule CoinPusher.BlockchainState do
   end
 
   @spec find_block(pid, integer, %MapSet{}, (pid -> boolean)) :: {pid | nil, integer, %MapSet{}}
-  defp find_block(block, depth, visited \\ MapSet.new(), func)
-
-  defp find_block(nil, depth, visited, _func) do
-    {nil, depth, visited}
-  end
-
   defp find_block(block, depth, visited, func) when is_pid(block) do
     id = LinkedBlock.block(block).id
     cond do
@@ -71,5 +65,9 @@ defmodule CoinPusher.BlockchainState do
         previous = LinkedBlock.previous(block)
         find_block(previous, depth + 1, visited, func)
     end
+  end
+
+  defp find_block(nil, depth, visited, _func) do
+    {nil, depth, visited}
   end
 end
