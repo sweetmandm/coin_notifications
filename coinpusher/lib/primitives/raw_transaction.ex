@@ -1,26 +1,27 @@
 defmodule CoinPusher.RawTransaction do
-  alias CoinPusher.{VarInt, TxIn, TxOut}
+  alias CoinPusher.{VarInt, TxIn, TxOut, DoubleSha256}
   import CoinPusher.ParseList
   use Bitwise
 
-  defstruct [:version, :tx_in, :tx_out, :lock_time]
+  defstruct [:id, :version, :tx_in, :tx_out, :lock_time]
 
   @spec parse(binary) :: {:ok, %__MODULE__{}, binary}
   def parse(data) do
+    id = DoubleSha256.to_string(data)
     <<version :: signed-little-32, rest :: binary >> = data
-    parse(version, rest)
+    parse(id, version, rest)
   end
 
-  defp parse(version = 2, <<0x00, flags :: 8, data :: binary>>) do
-    if flags == 0x00, do: :error, else: parse(version, flags, data)
+  defp parse(id, version = 2, <<0x00, flags :: 8, data :: binary>>) do
+    if flags == 0x00, do: :error, else: parse(id, version, flags, data)
   end
 
-  defp parse(version = 2, data) do
+  defp parse(id, version = 2, data) do
     flags = 0x00
-    parse(version, flags, data)
+    parse(id, version, flags, data)
   end
 
-  defp parse(version = 2, flags, data) do
+  defp parse(id, version = 2, flags, data) do
     {:ok, tx_in_count, data} = VarInt.parse(data)
     {:ok, tx_in_list, data} = parse_list(tx_in_count, data, &TxIn.parse/1)
     {:ok, tx_out_count, data} = VarInt.parse(data)
@@ -34,6 +35,7 @@ defmodule CoinPusher.RawTransaction do
     unless flags == 0, do: :error
     <<lock_time :: unsigned-little-32, rest :: binary>> = data
     tx = %CoinPusher.RawTransaction{
+      id: id,
       version: version,
       tx_in: tx_in_list,
       tx_out: tx_out_list,

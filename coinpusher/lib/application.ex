@@ -6,6 +6,7 @@ defmodule CoinPusher.Application do
 
     children = [
       worker(CoinPusher.NotificationsController, [:listeners]),
+      worker(CoinPusher.BlockchainState, []),
       worker(CoinPusher.ZMQClient, [zmq_address(), zmq_port()], function: :init)
     ]
 
