@@ -1,6 +1,5 @@
 defmodule CoinPusher.Blockchain do
   alias CoinPusher.{RawBlock, RPC, LinkedBlock, BlockchainState}
-  require IEx
 
   @spec handle_receive_block(%RawBlock{}) :: any
   def handle_receive_block(block) do

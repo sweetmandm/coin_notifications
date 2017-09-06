@@ -21,7 +21,7 @@ defmodule CoinPusher.BlockchainState do
         Agent.update(__MODULE__, fn(tips) ->
           [linked_block | tips]
         end)
-      {:ok, previous, _depth} ->
+      {:ok, previous, _depth} when is_pid(previous) ->
         {:ok, linked_block} = LinkedBlock.start_link(previous, block)
         Agent.update(__MODULE__, fn(tips) ->
           tips = List.delete(tips, previous)
