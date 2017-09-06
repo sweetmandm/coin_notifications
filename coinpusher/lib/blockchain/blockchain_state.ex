@@ -21,11 +21,12 @@ defmodule CoinPusher.BlockchainState do
   def add_block(block = %RawBlock{}) do
     prev_hash = block |> RawBlock.prev_block_id
     case find_block_with_id(prev_hash) do
-      {:ok, nil, _depth} -> add_new_tip(block)
-      {:ok, previous, _depth} when is_pid(previous) -> extend_chain(block, previous)
+      {:not_found, _, _, _} -> add_new_tip(block)
+      {:found, previous, _, _} -> extend_chain(block, previous)
     end
   end
 
+  @spec add_new_tip(%RawBlock{}) :: :ok
   defp add_new_tip(block) do
     {:ok, linked_block} = LinkedBlock.start_link(nil, block)
     Agent.update(__MODULE__, fn(tips) ->
@@ -33,31 +34,57 @@ defmodule CoinPusher.BlockchainState do
     end)
   end
 
+  @spec extend_chain(%RawBlock{}, pid) :: :ok
   defp extend_chain(block, previous) when is_pid(previous) do
     {:ok, linked_block} = LinkedBlock.start_link(previous, block)
     Agent.update(__MODULE__, fn(tips) ->
       tips = List.delete(tips, previous)
       [linked_block | tips]
     end)
+    trim_chain_from(linked_block)
   end
 
-  @spec find_block_with_id(String.t) :: {:ok, pid | nil, integer}
+  @spec chain_length(pid) :: integer
+  def chain_length(tip, count \\ 0)
+
+  def chain_length(nil, count) do
+    count
+  end
+
+  def chain_length(tip, count) do
+    chain_length(tip |> LinkedBlock.previous, count + 1)
+  end
+
+  defp trim_chain_from(tip) do
+    cond do
+      chain_length(tip) <= @target_length ->
+        :ok
+      true ->
+        {:found, block, _depth, _visited} = find_block(tip, 1, MapSet.new(), fn(block) ->
+          block |> LinkedBlock.previous |> LinkedBlock.previous == nil
+        end)
+        last = block |> LinkedBlock.previous
+        Process.exit(last, :kill)
+        block |> LinkedBlock.set_previous(nil)
+    end
+  end
+
+  @spec find_block_with_id(String.t) :: {:found, pid, integer, %MapSet{}} | {:not_found, nil, integer, %MapSet{}}
   def find_block_with_id(hash) do
-    result = find_block(fn(candidate) ->
+    find_block(fn(candidate) ->
       hash == LinkedBlock.block(candidate).id
     end)
-    {:ok, result |> elem(0), result |> elem(1)}
   end
 
   @spec find_block((pid -> boolean)) :: {pid | nil, integer, %MapSet{}}
   def find_block(func) do
     tips = get_chain_tips()
-    result = tips |> Enum.reduce_while({nil, 0, MapSet.new()}, fn(tip, acc) ->
+    result = tips |> Enum.reduce_while({:not_found, nil, 0, MapSet.new()}, fn(tip, acc) ->
       visited = acc |> elem(2)
       find_result = find_block(tip, 1, visited, func)
       case find_result do
-        {nil, _depth, _visited} -> {:cont, find_result}
-        {pid, _depth, _visited} when is_pid(pid) -> {:halt, find_result}
+        {:not_found, _, _, _} -> {:cont, find_result}
+        {:found, _, _, _} -> {:halt, find_result}
       end
     end)
     result
@@ -68,9 +95,9 @@ defmodule CoinPusher.BlockchainState do
     id = LinkedBlock.block(block).id
     cond do
       func.(block) ->
-        {block, depth, visited}
+        {:found, block, depth, visited}
       MapSet.member?(visited, id) ->
-        {nil, 0, visited}
+        {:not_found, nil, 0, visited}
       true ->
         visited = MapSet.put(visited, id)
         previous = LinkedBlock.previous(block)
@@ -78,7 +105,7 @@ defmodule CoinPusher.BlockchainState do
     end
   end
 
-  defp find_block(nil, depth, visited, _func) do
-    {nil, depth, visited}
+  defp find_block(nil, _depth, visited, _func) do
+    {:not_found, nil, 0, visited}
   end
 end
