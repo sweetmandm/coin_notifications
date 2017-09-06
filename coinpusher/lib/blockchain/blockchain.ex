@@ -6,17 +6,22 @@ defmodule CoinPusher.Blockchain do
     BlockchainState.add_block(block)
   end
 
-  @spec best_block_hash :: String.t
-  def best_block_hash do
+  @spec fetch_initial_blocks(integer) :: list(%RawBlock{})
+  def fetch_initial_blocks(count) do
+    {:ok, %{"result" => block_hash}} = RPC.get_best_block_hash()
+    fetch_blocks(count, block_hash)
   end
 
-  @spec fetch_best_block :: %RawBlock{}
-  def fetch_best_block do
-    {:ok, %{"result" => block_hash}} = RPC.get_best_block_hash()
-    {:ok, %{"result" => hex}} = RPC.get_raw_block(block_hash)
-    {:ok, data} = hex |> Base.decode16(case: :lower)
-    {:ok, block} = RawBlock.parse(data)
-    block
+  def fetch_blocks(count, tip_id, result \\ []) do
+    cond do
+      Enum.count(result) == count ->
+        result
+      true ->
+        {:ok, %{"result" => hex}} = RPC.get_raw_block(tip_id)
+        {:ok, data} = hex |> Base.decode16(case: :lower)
+        {:ok, block} = RawBlock.parse(data)
+        fetch_blocks(count, block |> RawBlock.prev_block_id, [block | result])
+    end
   end
 
   @spec block_for_transaction(String.t) :: {:ok, %RawBlock{}} | {:error, any}
