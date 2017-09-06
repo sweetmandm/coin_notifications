@@ -4,6 +4,10 @@ defmodule CoinPusher.BlockchainState do
 
   @target_length 20
 
+  defmodule Tip do
+    defstruct [:tip, :local_length]
+  end
+
   @spec start_link :: {:ok, pid}
   def start_link do
     result = Agent.start_link(fn -> [] end, name: __MODULE__)
@@ -19,10 +23,15 @@ defmodule CoinPusher.BlockchainState do
 
   @spec add_block(%RawBlock{}) :: :ok
   def add_block(block = %RawBlock{}) do
-    prev_hash = block |> RawBlock.prev_block_id
-    case find_block_with_id(prev_hash) do
-      {:not_found, _, _, _} -> add_new_tip(block)
-      {:found, previous, _, _} -> extend_chain(block, previous)
+    case find_block_with_id(block.id) do
+      {:found, _, _, _} ->
+        :ok
+      {:not_found, _, _, _} ->
+        prev_hash = block |> RawBlock.prev_block_id
+        case find_block_with_id(prev_hash) do
+          {:not_found, _, _, _} -> add_new_tip(block)
+          {:found, previous, _, _} -> extend_chain(block, previous)
+        end
     end
   end
 
@@ -30,7 +39,8 @@ defmodule CoinPusher.BlockchainState do
   defp add_new_tip(block) do
     {:ok, linked_block} = LinkedBlock.start_link(nil, block)
     Agent.update(__MODULE__, fn(tips) ->
-      [linked_block | tips]
+      tip = %Tip{tip: linked_block, local_length: 1}
+      [tip | tips] |> sort_by_local_length()
     end)
   end
 
@@ -38,10 +48,18 @@ defmodule CoinPusher.BlockchainState do
   defp extend_chain(block, previous) when is_pid(previous) do
     {:ok, linked_block} = LinkedBlock.start_link(previous, block)
     Agent.update(__MODULE__, fn(tips) ->
-      tips = List.delete(tips, previous)
-      [linked_block | tips]
+      index = Enum.find_index(tips, fn(tip) -> tip.tip == previous end)
+      tips = List.delete_at(tips, index)
+      tip = %Tip{tip: linked_block, local_length: chain_length(linked_block)}
+      [tip | tips] |> sort_by_local_length()
     end)
     trim_chain_from(linked_block)
+  end
+
+  @spec sort_by_local_length(list(%Tip{})) :: list(%Tip{})
+  defp sort_by_local_length(tips) do
+    tips
+    |> Enum.sort(&( &1.local_length > &2.local_length ))
   end
 
   @spec chain_length(pid) :: integer
@@ -55,6 +73,7 @@ defmodule CoinPusher.BlockchainState do
     chain_length(tip |> LinkedBlock.previous, count + 1)
   end
 
+  @spec trim_chain_from(pid) :: :ok
   defp trim_chain_from(tip) do
     cond do
       chain_length(tip) <= @target_length ->
@@ -80,8 +99,8 @@ defmodule CoinPusher.BlockchainState do
   def find_block(func) do
     tips = get_chain_tips()
     result = tips |> Enum.reduce_while({:not_found, nil, 0, MapSet.new()}, fn(tip, acc) ->
-      visited = acc |> elem(2)
-      find_result = find_block(tip, 1, visited, func)
+      {_, _, _, visited} = acc
+      find_result = find_block(tip.tip, 1, visited, func)
       case find_result do
         {:not_found, _, _, _} -> {:cont, find_result}
         {:found, _, _, _} -> {:halt, find_result}
