@@ -1,6 +1,6 @@
 defmodule CoinPusher.ZMQClient do
   require Logger
-  alias CoinPusher.{RawTransaction, RawBlock, NotificationsController}
+  alias CoinPusher.{RawTransaction, RawBlock, NotificationsController, Blockchain}
 
   def init(address, port) do
     pid = spawn_listener(address, port)
@@ -36,6 +36,7 @@ defmodule CoinPusher.ZMQClient do
     case RawBlock.parse(data) do
       {:ok, block} ->
         Logger.debug "block:\n[hash] #{block.id}"
+        Blockchain.handle_receive_block(block)
       {:error, reason} ->
         IO.inspect reason
     end

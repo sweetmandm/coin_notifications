@@ -1,7 +1,7 @@
 defmodule CoinPusher.RPC do
   alias CoinPusher.RPC.HTTPClient
 
-  @type rpc_result :: %{error: any, id: integer, result: HTTPClient.json}
+  @type rpc_result :: {:ok, %{error: any, id: integer, result: HTTPClient.json}}
 
   @spec get_raw_transaction(String.t) :: rpc_result
   def get_raw_transaction(hash) do
@@ -16,6 +16,11 @@ defmodule CoinPusher.RPC do
   @spec get_best_block_hash :: rpc_result
   def get_best_block_hash do
     HTTPClient.call(url(), "getbestblockhash", [], [auth_header()])
+  end
+
+  @spec get_raw_block(String.t) :: rpc_result
+  def get_raw_block(block_hash) do
+    HTTPClient.call(url(), "getblock", [block_hash, false], [auth_header()])
   end
 
   defp auth_header do

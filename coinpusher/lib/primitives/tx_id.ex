@@ -1,5 +1,6 @@
 defmodule CoinPusher.TxId do
   import CoinPusher.ReverseBytes
+  alias CoinPusher.DoubleSha256
 
   @spec to_string(binary) :: String.t
   def to_string(binary) do
@@ -19,5 +20,10 @@ defmodule CoinPusher.TxId do
   def parse(data) do
     <<id :: binary-size(32), rest :: binary>> = data
     {:ok, id, rest}
+  end
+
+  @spec from_raw(binary) :: String.t
+  def from_raw(transaction) when is_binary(transaction) do
+    transaction |> DoubleSha256.to_string
   end
 end
