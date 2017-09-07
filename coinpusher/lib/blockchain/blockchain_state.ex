@@ -94,7 +94,7 @@ defmodule CoinPusher.BlockchainState do
   end
 
   @spec each_block(pid, integer, (pid, integer -> any)) :: :ok
-  def each_block(block, depth \\ 0, func)
+  def each_block(block, depth \\ 1, func)
 
   def each_block(block, depth, func) when is_pid(block) do
     func.(block, depth)
