@@ -1,64 +1,67 @@
 defmodule CoinPusher.NotificationsController do
-  use GenServer
   require Logger
-  alias CoinPusher.{RawTransaction, AddressListeners, Contact, TransactionInfo}
+  alias CoinPusher.{
+    RawTransaction, AddressListeners, Contact, TransactionInfo, Blockchain
+  }
 
-  def init(listener_table_name) do
-    state = AddressListeners.init(listener_table_name)
-    {:ok, state}
+  @satoshis_per_btc 100000000
+
+  def init do
+    AddressListeners.init()
   end
 
-  @spec start_link(String.t) :: {:ok, pid}
-  def start_link(listener_table_name) do
-    GenServer.start_link(__MODULE__, listener_table_name, name: __MODULE__)
+  @spec add_listener(String.t, %Contact{} | String.t, list(integer)) :: :ok
+  def add_listener(address, contact, confirmation_triggers) do
+    AddressListeners.add(address, contact, confirmation_triggers)
   end
 
-  @spec add_listener(String.t, %Contact{} | String.t) :: any
-  def add_listener(address, contact) do
-    GenServer.call(__MODULE__, {:add_listener, address, contact})
-  end
-
-  @spec notify(%RawTransaction{}) :: {:reply, :ok, atom}
+  @spec notify(%RawTransaction{}) :: pid
   def notify(transaction) do
-    GenServer.call(__MODULE__, {:notify, transaction})
+    spawn(fn -> send_notifications!(transaction) end)
   end
 
-  def handle_call({:add_listener, address, contact}, _from, state) do
-    AddressListeners.add(state, address, contact)
-    {:reply, :ok, state}
-  end
-
-  def handle_call({:notify, transaction}, _from, state) do
-    spawn(fn -> send_notifications!(transaction, state) end)
-    {:reply, :ok, state}
-  end
-
-  defp send_notifications!(transaction, state) do
+  @spec send_notifications!(%RawTransaction{}) :: :ok
+  defp send_notifications!(transaction) do
     info = TransactionInfo.from(transaction)
+    confirmations = transaction |> Blockchain.confirmations_for_transaction
     Logger.debug "#{inspect(info)}"
 
     info.sources |> Enum.each(fn(source) ->
-      send_notifications_for_source!(transaction, source, state)
+      send_notifications_for_source!(transaction, source, confirmations)
     end)
 
     info.destinations |> Enum.each(fn(dest) ->
-      send_notifications_for_dest!(transaction, dest, state)
+      send_notifications_for_dest!(transaction, dest, confirmations)
     end)
   end
 
-  defp send_notifications_for_source!(_tx, source, state) do
-    send_notification!(source[:addresses], "Sending #{source[:value]} Satoshis", state)
+  @spec send_notifications_for_source!(%TransactionInfo{}, %{}, integer) :: :ok
+  defp send_notifications_for_source!(tx, source, confirmations) do
+    value = source[:value] / @satoshis_per_btc
+    send_notification!(
+      source[:addresses],
+      "Sending #{value} BTC in tx #{tx.raw_transaction.id} with #{confirmations} confirmations",
+      confirmations
+    )
   end
 
-  defp send_notifications_for_dest!(_tx, dest, state) do
-    send_notification!(dest[:addresses], "Receiving #{dest[:value]} Satoshis", state)
+  @spec send_notifications_for_dest!(%TransactionInfo{}, %{}, integer) :: :ok
+  defp send_notifications_for_dest!(tx, dest, confirmations) do
+    value = dest[:value] / @satoshis_per_btc
+    send_notification!(
+      dest[:addresses],
+      "Receiving #{value} BTC in tx #{tx.raw_transaction.id} with #{confirmations} confirmations",
+      confirmations
+    )
   end
 
-  defp send_notification!(addresses, message, state) do
+  @spec send_notification!(list(String.t), String.t, integer) :: :ok
+  defp send_notification!(addresses, message, confirmations) do
     addresses |> Enum.each(fn(address) ->
-      case AddressListeners.lookup(state, address) do
-        [{^address, contacts} | _] ->
-          contacts |> Enum.each(&Contact.notify(&1, message))
+      case AddressListeners.lookup(address, confirmations) do
+        {:atomic, list} ->
+          list
+          |> Enum.each(&Contact.notify(&1 |> elem(1), message))
         _ ->
           :no_listeners
       end

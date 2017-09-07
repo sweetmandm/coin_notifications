@@ -3,6 +3,7 @@ defmodule CoinPusher.ZMQClient do
   alias CoinPusher.{RawTransaction, RawBlock, NotificationsController, Blockchain}
 
   def init(address, port) do
+    NotificationsController.init()
     pid = spawn_listener(address, port)
     {:ok, pid}
   end
