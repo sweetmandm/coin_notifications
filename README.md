@@ -34,3 +34,14 @@ $ btccli getinfo
   ...
 }
 ```
+
+Try out a notification:
+
+1. manually add twilio creds to coinpusher/config/notifier_config.exs (this will be automated in the future)
+2. iex -S mix
+3. To get notifications for confirmations 0, 2, and 5 (note address uses single-quotes):
+`iex(1)> CoinPusher.NotificationsController.add_listener('<address>', "<phone>", [0, 2, 5])`
+4. `$ btccli generate 101 # to free up the first coinbase tx`
+4. `$ btccli sendtoaddress <address> 1.0`
+5. You should see the first notification go out.
+6. When subsequent blocks are generated you should see confirmations 2 and 5 go out.
