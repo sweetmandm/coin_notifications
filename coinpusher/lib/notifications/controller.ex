@@ -33,6 +33,8 @@ defmodule CoinPusher.NotificationsController do
     info.destinations |> Enum.each(fn(dest) ->
       send_notifications_for_dest!(transaction, dest, confirmations)
     end)
+
+    AddressListeners.did_notify(transaction.id, confirmations)
   end
 
   @spec send_notifications_for_source!(%TransactionInfo{}, %{}, integer) :: :ok
@@ -40,7 +42,7 @@ defmodule CoinPusher.NotificationsController do
     value = source[:value] / @satoshis_per_btc
     send_notification!(
       source[:addresses],
-      "Sending #{value} BTC in tx #{tx.raw_transaction.id} with #{confirmations} confirmations",
+      "Sending #{value} BTC in tx #{tx.id} with #{confirmations} confirmations",
       confirmations
     )
   end
@@ -50,7 +52,7 @@ defmodule CoinPusher.NotificationsController do
     value = dest[:value] / @satoshis_per_btc
     send_notification!(
       dest[:addresses],
-      "Receiving #{value} BTC in tx #{tx.raw_transaction.id} with #{confirmations} confirmations",
+      "Receiving #{value} BTC in tx #{tx.id} with #{confirmations} confirmations",
       confirmations
     )
   end
@@ -59,9 +61,9 @@ defmodule CoinPusher.NotificationsController do
   defp send_notification!(addresses, message, confirmations) do
     addresses |> Enum.each(fn(address) ->
       case AddressListeners.lookup(address, confirmations) do
-        {:atomic, list} ->
+        list when is_list(list) ->
           list
-          |> Enum.each(&Contact.notify(&1 |> elem(1), message))
+          |> Enum.each(&Contact.notify(&1, message))
         _ ->
           :no_listeners
       end

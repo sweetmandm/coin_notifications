@@ -34,8 +34,17 @@ defmodule CoinPusher.AddressListeners do
     end)
   end
 
+  @spec lookup(String.t, String.t, integer) :: list(%Contact{})
+  def lookup(address, txid, confirmations) do
+    if already_notified(txid, confirmations) do
+      []
+    else
+      lookup(address, confirmations)
+    end
+  end
+
   @spec lookup(String.t, integer) :: list(%Contact{})
-  def lookup(address, confirmations) do
+  defp lookup(address, confirmations) do
     {:atomic, contacts} = Mnesia.transaction(fn ->
       Mnesia.select(AddressContact, [
         {
@@ -48,6 +57,22 @@ defmodule CoinPusher.AddressListeners do
     contacts
     |> List.flatten
     |> Enum.filter(&(&1 |> elem(1) |> Enum.member?(confirmations)))
-    |> Enum.map(&(elem(&1, 0)))
+    |> Enum.map(&(&1 |> elem(0)))
+  end
+
+  def already_notified(txid, confirmations) do
+    {:atomic, result} = Mnesia.transaction(fn ->
+      Mnesia.read({TxEvent, txid})
+    end)
+    case result |> List.first do
+      {_, _, previous_confirmations} -> confirmations <= previous_confirmations
+      nil -> false
+    end
+  end
+
+  def did_notify(txid, confirmations) do
+    Mnesia.transaction(fn ->
+      Mnesia.write({TxEvent, txid, confirmations})
+    end)
   end
 end
