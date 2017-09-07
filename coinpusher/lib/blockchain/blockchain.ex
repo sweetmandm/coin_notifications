@@ -6,6 +6,12 @@ defmodule CoinPusher.Blockchain do
     BlockchainState.add_block(block)
   end
 
+  @spec find_block((pid -> boolean)) :: {:found, pid} | {:not_found, nil}
+  def find_block(func) do
+    {result, pid, _, _} = BlockchainState.find_block(func)
+    {result, pid}
+  end
+
   @spec fetch_initial_blocks(integer) :: list(%RawBlock{})
   def fetch_initial_blocks(count) do
     {:ok, %{"result" => block_hash}} = RPC.get_best_block_hash()
@@ -34,7 +40,7 @@ defmodule CoinPusher.Blockchain do
   end
 
   @spec confirmations_for_transaction(String.t) :: integer
-  def confirmations_for_transaction(transaction) do
+  def confirmations_for_transaction(transaction) when is_binary(transaction) do
     result = block_for_transaction(transaction)
     case result do
       {:not_found, _, _, _} -> 0

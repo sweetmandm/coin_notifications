@@ -1,7 +1,7 @@
 defmodule CoinPusher.NotificationsController do
   require Logger
   alias CoinPusher.{
-    RawTransaction, AddressListeners, Contact, TransactionInfo, Blockchain
+    RawTransaction, RawBlock, AddressListeners, Contact, TransactionInfo, Blockchain
   }
 
   @satoshis_per_btc 100000000
@@ -15,16 +15,22 @@ defmodule CoinPusher.NotificationsController do
     AddressListeners.add(address, contact, confirmation_triggers)
   end
 
-  @spec notify(%RawTransaction{}) :: pid
-  def notify(transaction) do
+  @spec notify_transaction(%RawTransaction{}) :: pid
+  def notify_transaction(transaction) do
     spawn(fn -> send_notifications!(transaction) end)
   end
 
+  @spec notify_block(%RawBlock{}) :: pid
+  def notify_block(block) do
+    spawn(fn ->
+      block.txns |> Enum.each(&__MODULE__.send_notifications!/1)
+    end)
+  end
+
   @spec send_notifications!(%RawTransaction{}) :: :ok
-  defp send_notifications!(transaction) do
+  def send_notifications!(transaction) do
     info = TransactionInfo.from(transaction)
-    confirmations = transaction |> Blockchain.confirmations_for_transaction
-    Logger.debug "#{inspect(info)}"
+    confirmations = transaction.id |> Blockchain.confirmations_for_transaction
 
     info.sources |> Enum.each(fn(source) ->
       send_notifications_for_source!(transaction, source, confirmations)
@@ -42,6 +48,7 @@ defmodule CoinPusher.NotificationsController do
     value = source[:value] / @satoshis_per_btc
     send_notification!(
       source[:addresses],
+      tx.id,
       "Sending #{value} BTC in tx #{tx.id} with #{confirmations} confirmations",
       confirmations
     )
@@ -52,15 +59,16 @@ defmodule CoinPusher.NotificationsController do
     value = dest[:value] / @satoshis_per_btc
     send_notification!(
       dest[:addresses],
+      tx.id,
       "Receiving #{value} BTC in tx #{tx.id} with #{confirmations} confirmations",
       confirmations
     )
   end
 
-  @spec send_notification!(list(String.t), String.t, integer) :: :ok
-  defp send_notification!(addresses, message, confirmations) do
+  @spec send_notification!(list(String.t), String.t, String.t, integer) :: :ok
+  defp send_notification!(addresses, txid, message, confirmations) do
     addresses |> Enum.each(fn(address) ->
-      case AddressListeners.lookup(address, confirmations) do
+      case AddressListeners.lookup(address, txid, confirmations) do
         list when is_list(list) ->
           list
           |> Enum.each(&Contact.notify(&1, message))
