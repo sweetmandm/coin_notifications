@@ -8,6 +8,9 @@ defmodule CoinPusher.BlockchainState do
     defstruct [:tip, :local_length]
   end
 
+  @type find_block_result :: {:found, pid, integer, %MapSet{}}
+                           | {:not_found, nil, integer, %MapSet{}}
+
   @spec start_link :: {:ok, pid}
   def start_link do
     result = Agent.start_link(fn -> [] end, name: __MODULE__)
@@ -88,7 +91,7 @@ defmodule CoinPusher.BlockchainState do
     end
   end
 
-  @spec find_block_with_id(String.t) :: {:found, pid, integer, %MapSet{}} | {:not_found, nil, integer, %MapSet{}}
+  @spec find_block_with_id(String.t) :: find_block_result
   def find_block_with_id(hash) do
     find_block(fn(candidate) ->
       hash == LinkedBlock.block(candidate).id
@@ -109,7 +112,7 @@ defmodule CoinPusher.BlockchainState do
     result
   end
 
-  @spec find_block(pid, integer, %MapSet{}, (pid -> boolean)) :: {pid | nil, integer, %MapSet{}}
+  @spec find_block(pid, integer, %MapSet{}, (pid -> boolean)) :: find_block_result
   defp find_block(block, depth, visited, func) when is_pid(block) do
     id = LinkedBlock.block(block).id
     cond do
