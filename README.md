@@ -1,8 +1,10 @@
 ## Coin Notifications
 
-This application listens for transaction events from `bitcoind` and sends out notifications when a transaction happens on a bitcoin address that you're interested in.
+This application listens for transaction events from `bitcoind` and sends out SMS messages when a transaction happens on a bitcoin address that you're interested in.
 
-It has the ability to parse raw transactions and extract addresses from transaction scripts in order to minimize RPC calls to the bitcoin daemon.
+- Parses raw transactions and blocks from `bitcoind`
+- Extracts addresses from the standard transaction scripts
+- Tracks the previous 30 blocks and sends SMS messages on requested confirmation counts. For example, you can subscribe for notifications when a transaction relevant to address "abc" has 0, 2, and 6 confirmations.
 
 ## Dev
 

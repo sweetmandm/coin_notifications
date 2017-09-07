@@ -2,7 +2,7 @@ defmodule CoinPusher.BlockchainState do
   alias CoinPusher.{LinkedBlock, RawBlock, Blockchain}
   use Agent
 
-  @target_length 20
+  @target_length 30
 
   defmodule Tip do
     defstruct [:tip, :local_length]
