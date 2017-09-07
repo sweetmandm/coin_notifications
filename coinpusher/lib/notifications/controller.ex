@@ -20,17 +20,23 @@ defmodule CoinPusher.NotificationsController do
     spawn(fn -> send_notifications!(transaction) end)
   end
 
-  @spec notify_block(%RawBlock{}) :: pid
-  def notify_block(block) do
+  @spec notify_block(%RawBlock{}, integer) :: pid
+  def notify_block(block, confirmations) do
     spawn(fn ->
-      block.txns |> Enum.each(&__MODULE__.send_notifications!/1)
+      block.txns
+      |> Enum.each(&(__MODULE__.send_notifications!(&1, confirmations)))
     end)
   end
 
   @spec send_notifications!(%RawTransaction{}) :: :ok
   def send_notifications!(transaction) do
-    info = TransactionInfo.from(transaction)
     confirmations = transaction.id |> Blockchain.confirmations_for_transaction
+    send_notifications!(transaction, confirmations)
+  end
+
+  @spec send_notifications!(%RawTransaction{}, integer) :: :ok
+  def send_notifications!(transaction, confirmations) do
+    info = TransactionInfo.from(transaction)
 
     info.sources |> Enum.each(fn(source) ->
       send_notifications_for_source!(transaction, source, confirmations)

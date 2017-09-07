@@ -24,11 +24,11 @@ defmodule CoinPusher.BlockchainState do
     Agent.get(__MODULE__, fn(state) -> state end)
   end
 
-  @spec add_block(%RawBlock{}) :: :ok
+  @spec add_block(%RawBlock{}) :: {:ok, pid}
   def add_block(block = %RawBlock{}) do
     case find_block_with_id(block.id) do
-      {:found, _, _, _} ->
-        :ok
+      {:found, pid, _, _} ->
+        {:ok, pid}
       {:not_found, _, _, _} ->
         prev_hash = block |> RawBlock.prev_block_id
         case find_block_with_id(prev_hash) do
@@ -38,16 +38,17 @@ defmodule CoinPusher.BlockchainState do
     end
   end
 
-  @spec add_new_tip(%RawBlock{}) :: :ok
+  @spec add_new_tip(%RawBlock{}) :: {:ok, pid}
   defp add_new_tip(block) do
     {:ok, linked_block} = LinkedBlock.start_link(nil, block)
     Agent.update(__MODULE__, fn(tips) ->
       tip = %Tip{tip: linked_block, local_length: 1}
       [tip | tips] |> sort_by_local_length()
     end)
+    {:ok, linked_block}
   end
 
-  @spec extend_chain(%RawBlock{}, pid) :: :ok
+  @spec extend_chain(%RawBlock{}, pid) :: {:ok, pid}
   defp extend_chain(block, previous) when is_pid(previous) do
     {:ok, linked_block} = LinkedBlock.start_link(previous, block)
     Agent.update(__MODULE__, fn(tips) ->
@@ -57,6 +58,7 @@ defmodule CoinPusher.BlockchainState do
       [tip | tips] |> sort_by_local_length()
     end)
     trim_chain_from(linked_block)
+    {:ok, linked_block}
   end
 
   @spec sort_by_local_length(list(%Tip{})) :: list(%Tip{})
@@ -89,6 +91,19 @@ defmodule CoinPusher.BlockchainState do
         Process.exit(last, :kill)
         block |> LinkedBlock.set_previous(nil)
     end
+  end
+
+  @spec each_block(pid, integer, (pid, integer -> any)) :: :ok
+  def each_block(block, depth \\ 0, func)
+
+  def each_block(block, depth, func) when is_pid(block) do
+    func.(block, depth)
+    previous = LinkedBlock.previous(block)
+    each_block(previous, depth + 1, func)
+  end
+
+  def each_block(nil, _depth, _func) do
+    :ok
   end
 
   @spec find_block_with_id(String.t) :: find_block_result

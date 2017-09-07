@@ -6,10 +6,9 @@ defmodule CoinPusher.Blockchain do
     BlockchainState.add_block(block)
   end
 
-  @spec find_block((pid -> boolean)) :: {:found, pid} | {:not_found, nil}
-  def find_block(func) do
-    {result, pid, _, _} = BlockchainState.find_block(func)
-    {result, pid}
+  @spec each_block(pid, (pid, integer -> boolean)) :: :ok
+  def each_block(tip, func) do
+    BlockchainState.each_block(tip, func)
   end
 
   @spec fetch_initial_blocks(integer) :: list(%RawBlock{})

@@ -39,10 +39,10 @@ defmodule CoinPusher.ZMQClient do
     case RawBlock.parse(data) do
       {:ok, block} ->
         Logger.debug "block:\n[hash] #{block.id}"
-        Blockchain.handle_receive_block(block)
-        Blockchain.find_block(fn(block) ->
-          NotificationsController.notify_block(block |> LinkedBlock.block)
-          false
+        {:ok, new_block} = Blockchain.handle_receive_block(block)
+        Blockchain.each_block(new_block, fn(block, confirmations) ->
+          raw_block = block |> LinkedBlock.block
+          NotificationsController.notify_block(raw_block, confirmations)
         end)
       {:error, reason} ->
         IO.inspect reason
