@@ -65,6 +65,7 @@ defmodule RawBlockSpec do
     describe "the transactions" do
       let :txns do
         [%CoinPusher.RawTransaction{
+          id: "7ac34411c83ef3a3e45b26b6d9ff3f394f968a924a094bbe7e33717dd6e699f4",
           version: 2,
           lock_time: 0,
           tx_in: [
