@@ -5,7 +5,7 @@ defmodule CoinPusher.RawTransaction do
 
   defstruct [:id, :version, :tx_in, :tx_out, :lock_time]
 
-  @spec parse(binary) :: {:ok, %__MODULE__{}, binary}
+  @spec parse(binary) :: {:ok, %__MODULE__{}, binary} | {:error, any}
   def parse(data) do
     id = DoubleSha256.to_string(data)
     <<version :: signed-little-32, rest :: binary >> = data
@@ -13,7 +13,7 @@ defmodule CoinPusher.RawTransaction do
   end
 
   defp parse(id, version = 2, <<0x00, flags :: 8, data :: binary>>) do
-    if flags == 0x00, do: :error, else: parse(id, version, flags, data)
+    if flags == 0x00, do: {:error, "bad flags"}, else: parse(id, version, flags, data)
   end
 
   defp parse(id, version = 2, data) do
@@ -32,7 +32,7 @@ defmodule CoinPusher.RawTransaction do
         true -> tx_in_list
         false -> add_witnesses_to_tx_in(tx_in_list, witnesses)
       end
-    unless flags == 0, do: :error
+    unless flags == 0, do: {:error, "unknown flag"}
     <<lock_time :: unsigned-little-32, rest :: binary>> = data
     tx = %CoinPusher.RawTransaction{
       id: id,
