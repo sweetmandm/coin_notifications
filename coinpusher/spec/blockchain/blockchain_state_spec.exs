@@ -48,6 +48,34 @@ defmodule CoinPusher.BlockchainStateSpec do
     end
   end
 
+  describe "finding a block" do
+    let :to_find do
+      tip = (tips() |> Enum.at(0)).tip
+      tip 
+      |> LinkedBlock.previous
+      |> LinkedBlock.previous
+      |> LinkedBlock.block
+    end
+
+    let :find do
+      CoinPusher.BlockchainState.find_block(fn(candidate) ->
+        LinkedBlock.block(candidate).id == to_find().id
+      end)
+    end
+    let :result, do: find() |> elem(0)
+    let :pid, do: find() |> elem(1)
+    let :found_block, do: pid() |> LinkedBlock.block
+    let :depth, do: find() |> elem(2)
+
+    it "finds an existing block" do
+      expect found_block().id |> to(eq to_find().id)
+    end
+
+    it "returns the block depth" do
+      expect depth() |> to(eq 3)
+    end
+  end
+
   describe "iterating blocks" do
     let :call_count, do: Agent.start_link((fn -> 0 end)) |> elem(1)
 
