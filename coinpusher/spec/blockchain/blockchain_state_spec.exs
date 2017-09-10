@@ -74,6 +74,15 @@ defmodule CoinPusher.BlockchainStateSpec do
     it "returns the block depth" do
       expect depth() |> to(eq 3)
     end
+
+    context "when the block does not exist" do
+      let :to_find, do: new_block(nil)
+
+      it "reports not found" do
+        expect result() |> to(eq :not_found)
+        expect pid() |> to(be_nil())
+      end
+    end
   end
 
   describe "iterating blocks" do
