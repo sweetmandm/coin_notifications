@@ -4,4 +4,5 @@ defmodule CoinPusher.Factory do
   use CoinPusher.BlockFactory
   use CoinPusher.BlockDataFactory
   use CoinPusher.TransactionDataFactory
+  use CoinPusher.TransactionFactory
 end

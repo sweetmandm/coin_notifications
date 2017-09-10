@@ -18,6 +18,23 @@ defmodule CoinPusher.BlockFactory do
           block
         end
       end
+
+      def with_id(block, mocked_id) do
+        %{block | id: mocked_id}
+      end
+
+      def with_transactions(block, tx) do
+        if tx do
+          # Note the merkle root will be wrong after this,
+          # unless this is changed to update it.
+          %{block |
+            txn_count: tx |> Enum.count,
+            txns: tx
+          }
+        else
+          block
+        end
+      end
     end
   end
 end
