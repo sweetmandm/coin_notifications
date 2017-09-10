@@ -6,16 +6,16 @@ defmodule CoinPusher.BlockchainStateSpec do
   def tips, do: CoinPusher.BlockchainState.get_chain_tips()
   def new_block(prev), do: build(:block) |> with_prev(prev)
 
-    let :fetch_func do
-      (fn(count) -> (build(:blockchain) |> with_count(count))[:blocks] end)
-    end
-    before do
-      CoinPusher.BlockchainState.start_link(fetch_func())
-    end
+  let :fetch_func do
+    (fn(count) -> (build(:blockchain) |> with_count(count))[:blocks] end)
+  end
+  before do
+    CoinPusher.BlockchainState.start_link(fetch_func())
+  end
 
-    finally do
-      CoinPusher.BlockchainState.stop()
-    end
+  finally do
+    CoinPusher.BlockchainState.stop()
+  end
 
   describe "the chain tips" do
     let :previous do
