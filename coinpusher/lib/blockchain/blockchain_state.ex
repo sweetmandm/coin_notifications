@@ -1,5 +1,5 @@
 defmodule CoinPusher.BlockchainState do
-  alias CoinPusher.{LinkedBlock, RawBlock, Blockchain}
+  alias CoinPusher.{LinkedBlock, RawBlock}
   use Agent
 
   @target_length 30
@@ -11,12 +11,15 @@ defmodule CoinPusher.BlockchainState do
   @type find_block_result :: {:found, pid, integer, %MapSet{}}
                            | {:not_found, nil, integer, %MapSet{}}
 
-  @spec start_link :: {:ok, pid}
-  def start_link do
+  @spec start_link((integer -> list(%RawBlock{}))) :: {:ok, pid}
+  def start_link(fetch_func) do
     result = Agent.start_link(fn -> [] end, name: __MODULE__)
-    Blockchain.fetch_initial_blocks(@target_length)
-    |> Enum.each(&add_block/1)
+    fetch_func.(@target_length) |> Enum.each(&add_block/1)
     result
+  end
+
+  def stop do
+    Agent.stop(__MODULE__)
   end
 
   @spec get_chain_tips :: list(pid)
@@ -53,7 +56,7 @@ defmodule CoinPusher.BlockchainState do
     {:ok, linked_block} = LinkedBlock.start_link(previous, block)
     Agent.update(__MODULE__, fn(tips) ->
       index = Enum.find_index(tips, fn(tip) -> tip.tip == previous end)
-      tips = List.delete_at(tips, index)
+      tips = if index, do: List.delete_at(tips, index), else: tips
       tip = %Tip{tip: linked_block, local_length: chain_length(linked_block)}
       [tip | tips] |> sort_by_local_length()
     end)

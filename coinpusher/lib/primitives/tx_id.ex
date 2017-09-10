@@ -13,6 +13,7 @@ defmodule CoinPusher.TxId do
   def from_string(transaction_id) do
     transaction_id
     |> Base.decode16(case: :lower)
+    |> elem(1)
     |> reverse_bytes
   end
 

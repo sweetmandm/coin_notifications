@@ -5,7 +5,7 @@ defmodule CoinPusher.Application do
     import Supervisor.Spec
 
     children = [
-      worker(CoinPusher.BlockchainState, []),
+      worker(CoinPusher.BlockchainState, [&CoinPusher.Blockchain.fetch_initial_blocks/1]),
       worker(CoinPusher.ZMQClient, [zmq_address(), zmq_port()], function: :init)
     ]
 
@@ -15,7 +15,7 @@ defmodule CoinPusher.Application do
 
   defp zmq_address do
     Application.get_env(:coinpusher, :zmq_address)
-      |> to_charlist
+    |> to_charlist
   end
 
   defp zmq_port do
