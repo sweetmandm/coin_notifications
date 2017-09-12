@@ -6,9 +6,9 @@ defmodule CoinPusher.LinkedBlock do
 
   @type node_link :: pid | nil
 
-  @spec start_link(node_link, %RawBlock{}) :: {:ok, pid}
-  def start_link(previous, block) do
-    Agent.start_link(fn ->
+  @spec start(node_link, %RawBlock{}) :: {:ok, pid}
+  def start(previous, block) do
+    Agent.start(fn ->
       %__MODULE__{previous: previous, block: block}
     end)
   end

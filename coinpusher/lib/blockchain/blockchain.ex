@@ -1,9 +1,31 @@
 defmodule CoinPusher.Blockchain do
   alias CoinPusher.{RawBlock, RPC, LinkedBlock, BlockchainState}
 
-  @spec handle_receive_block(%RawBlock{}) :: :ok
+  @spec handle_receive_block(%RawBlock{}) :: {:ok, pid}
   def handle_receive_block(block) do
-    BlockchainState.add_block(block)
+    {:ok, linked_block} = BlockchainState.add_block(block)
+    case linked_block |> LinkedBlock.previous do
+      nil ->
+        extend_backward(linked_block, linked_block)
+        {:ok, linked_block}
+      _ ->
+        {:ok, linked_block}
+    end
+  end
+
+  @spec extend_backward(pid, pid) :: :ok
+  defp extend_backward(tip, tail) do
+    block = tail |> LinkedBlock.block
+    id = block |> RawBlock.prev_block_id
+    {:ok, previous_block} = RPC.get_raw_block(id)
+    {:ok, previous} = BlockchainState.extend_backward(tip, tail, previous_block)
+    previous_id = previous_block |> RawBlock.prev_block_id
+    {result, found_join, _, _}  = BlockchainState.find_block_with_id(previous_id)
+    cond do
+      BlockchainState.chain_length(tip) >= BlockchainState.target_length() -> :ok
+      result == :found -> previous |> LinkedBlock.set_previous(found_join)
+      result == :not_found -> extend_backward(tip, previous)
+    end
   end
 
   @spec each_block(pid, (pid, integer -> boolean)) :: :ok
@@ -23,9 +45,7 @@ defmodule CoinPusher.Blockchain do
       ^count ->
         result
       _ ->
-        {:ok, %{"result" => hex}} = RPC.get_raw_block(tip_id)
-        {:ok, data} = hex |> Base.decode16(case: :lower)
-        {:ok, block} = RawBlock.parse(data)
+        {:ok, block} = RPC.get_raw_block(tip_id)
         fetch_blocks(count, block |> RawBlock.prev_block_id, [block | result])
     end
   end

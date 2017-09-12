@@ -31,7 +31,7 @@ defmodule CoinPusher.ZMQClient do
 
   defp loop(socket) do
     {:ok, message} = :chumak.recv_multipart(socket)
-    spawn_link(fn -> handle(message) end)
+    handle(message)
     loop(socket)
   end
 
@@ -40,10 +40,7 @@ defmodule CoinPusher.ZMQClient do
       {:ok, block} ->
         Logger.debug "block:\n[hash] #{block.id}"
         {:ok, new_block} = Blockchain.handle_receive_block(block)
-        Blockchain.each_block(new_block, fn(block, confirmations) ->
-          raw_block = block |> LinkedBlock.block
-          NotificationsController.notify_block(raw_block, confirmations)
-        end)
+        notify_all_confirmations(new_block)
       {:error, reason} ->
         IO.inspect reason
     end
@@ -57,4 +54,13 @@ defmodule CoinPusher.ZMQClient do
         IO.inspect reason
     end
   end
+
+  @spec notify_all_confirmations(pid) :: :ok
+  defp notify_all_confirmations(tip) do
+    Blockchain.each_block(tip, fn(block, confirmations) ->
+      raw_block = block |> LinkedBlock.block
+      NotificationsController.notify_block(raw_block, confirmations)
+    end)
+  end
+
 end

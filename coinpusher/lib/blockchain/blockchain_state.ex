@@ -22,6 +22,9 @@ defmodule CoinPusher.BlockchainState do
     Agent.stop(__MODULE__)
   end
 
+  @spec target_length :: integer
+  def target_length, do: @target_length
+
   @spec get_chain_tips :: list(pid)
   def get_chain_tips do
     Agent.get(__MODULE__, fn(state) -> state end)
@@ -43,7 +46,7 @@ defmodule CoinPusher.BlockchainState do
 
   @spec add_new_tip(%RawBlock{}) :: {:ok, pid}
   defp add_new_tip(block) do
-    {:ok, linked_block} = LinkedBlock.start_link(nil, block)
+    {:ok, linked_block} = LinkedBlock.start(nil, block)
     Agent.update(__MODULE__, fn(tips) ->
       tip = %Tip{tip: linked_block, local_length: 1}
       [tip | tips] |> sort_by_local_length()
@@ -53,15 +56,38 @@ defmodule CoinPusher.BlockchainState do
 
   @spec extend_chain(%RawBlock{}, pid) :: {:ok, pid}
   defp extend_chain(block, previous) when is_pid(previous) do
-    {:ok, linked_block} = LinkedBlock.start_link(previous, block)
+    {:ok, linked_block} = LinkedBlock.start(previous, block)
+    trim_chain_from(linked_block)
     Agent.update(__MODULE__, fn(tips) ->
       index = Enum.find_index(tips, fn(tip) -> tip.tip == previous end)
       tips = if index, do: List.delete_at(tips, index), else: tips
       tip = %Tip{tip: linked_block, local_length: chain_length(linked_block)}
       [tip | tips] |> sort_by_local_length()
     end)
-    trim_chain_from(linked_block)
     {:ok, linked_block}
+  end
+
+  @spec extend_backward(pid, pid, %RawBlock{}) :: {:ok, pid}
+  def extend_backward(tip, last, new_last) when is_pid(last) do
+    {:ok, previous} = LinkedBlock.start(nil, new_last)
+    last |> LinkedBlock.set_previous(previous)
+    trim_chain_from(tip)
+    Agent.update(__MODULE__, fn(tips) ->
+      needs_recount = Enum.find_index(tips, fn(chain_tip) -> chain_tip.tip == tip end)
+      tips = tips |> List.replace_at(
+        needs_recount,
+        %Tip{tip: tip, local_length: chain_length(tip)}
+      )
+      merged_index = Enum.find_index(tips, fn(chain_tip) ->
+        # This will return non-nil if we merge into an existing tip
+        # while extending a chain backwards.
+        tip_block = chain_tip.tip |> LinkedBlock.block
+        tip_block.id == new_last.id
+      end)
+      tips = if merged_index, do: List.delete_at(tips, merged_index), else: tips
+      tips |> sort_by_local_length()
+    end)
+    {:ok, previous}
   end
 
   @spec sort_by_local_length(list(%Tip{})) :: list(%Tip{})
@@ -88,11 +114,14 @@ defmodule CoinPusher.BlockchainState do
         :ok
       true ->
         {:found, block, _depth, _visited} = find_block(tip, 1, MapSet.new(), fn(block) ->
-          block |> LinkedBlock.previous |> LinkedBlock.previous == nil
+          new_last = block |> LinkedBlock.previous
+          new_last != nil and new_last |> LinkedBlock.previous == nil
         end)
-        last = block |> LinkedBlock.previous
-        Process.exit(last, :kill)
-        block |> LinkedBlock.set_previous(nil)
+        if block do
+          last = block |> LinkedBlock.previous
+          Process.exit(last, :kill)
+          block |> LinkedBlock.set_previous(nil)
+        end
     end
   end
 
