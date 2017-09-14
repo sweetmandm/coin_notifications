@@ -12,16 +12,16 @@ defmodule CoinPusher.RawTransaction do
     parse(id, version, rest)
   end
 
-  defp parse(id, version = 2, <<0x00, flags :: 8, data :: binary>>) do
+  defp parse(id, version, <<0x00, flags :: 8, data :: binary>>) do
     if flags == 0x00, do: {:error, "bad flags"}, else: parse(id, version, flags, data)
   end
 
-  defp parse(id, version = 2, data) do
+  defp parse(id, version, data) do
     flags = 0x00
     parse(id, version, flags, data)
   end
 
-  defp parse(id, version = 2, flags, data) do
+  defp parse(id, version, flags, data) do
     {:ok, tx_in_count, data} = VarInt.parse(data)
     {:ok, tx_in_list, data} = parse_list(tx_in_count, data, &TxIn.parse/1)
     {:ok, tx_out_count, data} = VarInt.parse(data)
