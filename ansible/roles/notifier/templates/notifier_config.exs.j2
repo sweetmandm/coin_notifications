@@ -7,4 +7,6 @@ config :coinpusher,
   zmq_address: "{{ btc_opts.zmq.addr }}",
   zmq_port: "{{ btc_opts.zmq.port }}",
   rpc_user: "{{ rpc_username }}",
-  rpc_pass: "{{ rpc_password }}"
+  rpc_pass: "{{ rpc_password }}",
+  rpc_address: "{{ rpc_server_ip }}",
+  rpc_port: "{{ rpc_port }}"
