@@ -1,10 +1,14 @@
 ## Coin Notifications
 
-This application listens for transaction events from `bitcoind` and sends out SMS messages when a transaction happens on a bitcoin address that you're interested in.
+This application listens for transaction events from `bitcoind`, tracks confirmations, and sends out SMS messages for bitcoin addresses that you're interested in.
+
+It's a working proof-of-concept, but for more reliable 0-transaction notifications (and more timely notifications), it would likely need to connect to several globaly distributed full bitcoin nodes.
+
+Though the PoC sends out SMS, it could just as easily (and more usefully) connect to some other service and allow that service to determine where to send the notification.
 
 - Parses raw transactions and blocks from `bitcoind`
 - Extracts addresses from the standard transaction scripts
-- Tracks the previous 30 blocks and sends SMS messages on requested confirmation counts. For example, you can subscribe for notifications when a transaction relevant to address "abc" has 0, 2, and 6 confirmations.
+- Keeps the best 30 blocks and sends SMS messages on requested confirmation counts.
 
 ## Dev
 
@@ -24,7 +28,20 @@ $ ansible-playbook -i ansible/hosts ansible/provision.yml -l dev
 $ vagrant ssh
 ```
 
-After you've ssh'd into the box, Ansible has also provided a command-line command `btccli` which will execute against the active bitcoin network and data directory, so you don't have to use `bitcoin-cli -regtest -datadir=...`
+Try out a notification:
+
+1. cd `coin_notifications`
+2. manually add twilio creds to coinpusher/config/notifier_config.exs (this will be automated in the future)
+3. `iex -S mix`
+4. To get notifications for confirmations 0, 2, and 5 (note address uses single-quotes):
+`iex(1)> CoinPusher.NotificationsController.add_listener('<address>', "<phone>", [0, 2, 5])`
+5. `$ btccli generate 101 # to free up the first coinbase tx`
+6. `$ btccli sendtoaddress <address> 1.0`
+7. You should see the first 0-confirmation notification go out.
+8. When subsequent blocks are generated you should see confirmations 2 and 5 go out.
+
+
+When you're ssh'd into a box provisioned by the included Ansible roles, you will also have a command `btccli` which will execute against the active bitcoin network and data directory, so you don't have to use `bitcoin-cli -regtest -rpcuser= ... -datadir=...`
 
 For example:
 
@@ -37,13 +54,3 @@ $ btccli getinfo
 }
 ```
 
-Try out a notification:
-
-1. manually add twilio creds to coinpusher/config/notifier_config.exs (this will be automated in the future)
-2. iex -S mix
-3. To get notifications for confirmations 0, 2, and 5 (note address uses single-quotes):
-`iex(1)> CoinPusher.NotificationsController.add_listener('<address>', "<phone>", [0, 2, 5])`
-4. `$ btccli generate 101 # to free up the first coinbase tx`
-4. `$ btccli sendtoaddress <address> 1.0`
-5. You should see the first notification go out.
-6. When subsequent blocks are generated you should see confirmations 2 and 5 go out.
