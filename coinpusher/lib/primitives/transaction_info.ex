@@ -41,11 +41,16 @@ defmodule CoinPusher.TransactionInfo do
     |> Enum.reject(&TxIn.is_coinbase?/1)
     |> Enum.map(fn(tx_in) ->
       tx_id = tx_in.previous_output.hash |> TxId.to_string
-      {:ok, %{"result" => result}} = RPC.get_raw_transaction(tx_id)
-      {:ok, raw_tx} = result |> Base.decode16(case: :lower)
-      {:ok, tx, <<>>} = raw_tx |> RawTransaction.parse
-      tx.tx_out |> Enum.at(tx_in.previous_output.index)
+      case RPC.get_raw_transaction(tx_id) do
+        {:ok, %{"result" => result}} ->
+          {:ok, raw_tx} = result |> Base.decode16(case: :lower)
+          {:ok, tx, <<>>} = raw_tx |> RawTransaction.parse
+          tx.tx_out |> Enum.at(tx_in.previous_output.index)
+        {:error, :internal_server_error} ->
+          []
+      end
     end)
+    |> List.flatten
   end
 end
 

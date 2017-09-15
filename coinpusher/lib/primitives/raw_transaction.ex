@@ -1,6 +1,7 @@
 defmodule CoinPusher.RawTransaction do
   alias CoinPusher.{VarInt, TxIn, TxOut, DoubleSha256}
   import CoinPusher.ParseList
+  import Logger
   use Bitwise
 
   defstruct [:id, :version, :tx_in, :tx_out, :lock_time]
@@ -30,7 +31,7 @@ defmodule CoinPusher.RawTransaction do
     tx_in_list =
       case Enum.empty?(witnesses) do
         true -> tx_in_list
-        false -> add_witnesses_to_tx_in(tx_in_list, witnesses)
+        false -> tx_in_list #add_witnesses_to_tx_in(tx_in_list, witnesses)
       end
     unless flags == 0, do: {:error, "unknown flag"}
     <<lock_time :: unsigned-little-32, rest :: binary>> = data
@@ -45,7 +46,7 @@ defmodule CoinPusher.RawTransaction do
   end
 
   defp parse_witness_flag(flags, tx_in_count, data) when band(flags, 1) == 1 do
-    {:ok, witnesses , data} = parse_witness_program(tx_in_count, data)
+    {:ok, witnesses, data} = parse_witness_program(tx_in_count, data)
     {:ok, bxor(flags, 1), witnesses, data}
   end
 

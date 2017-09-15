@@ -4,7 +4,7 @@ defmodule CoinPusher.RPC do
   @type rpc_result :: {:ok, %{error: any, id: integer, result: HTTPClient.json}}
 
   @spec get_raw_transaction(String.t) :: rpc_result
-  def get_raw_transaction(hash) do
+  def get_raw_transaction(hash) when is_binary(hash) do
     HTTPClient.call(url(), "getrawtransaction", [hash], [auth_header()])
   end
 

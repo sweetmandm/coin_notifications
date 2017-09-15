@@ -14,7 +14,7 @@ defmodule CoinPusher.BlockchainState do
   @spec start_link((integer -> list(%RawBlock{}))) :: {:ok, pid}
   def start_link(fetch_func) do
     result = Agent.start_link(fn -> [] end, name: __MODULE__)
-    fetch_func.(@target_length) |> Enum.each(&add_block/1)
+    #fetch_func.(2) |> Enum.each(&add_block/1)
     result
   end
 
