@@ -27,6 +27,7 @@ defmodule CoinPusher.Mixfile do
       {:chumak, github: "zeromq/chumak"},
       {:poison, "~> 3.1"},
       {:hackney, "~> 1.7"},
+      {:honeydew, "~> 1.0.1"},
       {:espec, "~> 1.4.5", only: :test},
       {:ex_machina, "~> 2.1", only: :test}
     ]
