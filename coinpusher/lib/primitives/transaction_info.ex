@@ -3,12 +3,12 @@ defmodule CoinPusher.TransactionInfo do
 
   @type address_tx :: %{value: integer, addresses: list(String.t)}
 
-  defstruct [:raw_transaction, :destinations, :sources]
+  defstruct [:id, :destinations, :sources]
 
   @spec from(%RawTransaction{}) :: %__MODULE__{}
   def from(tx) do
     %__MODULE__{
-      raw_transaction: tx,
+      id: tx.id,
       sources: sources(tx),
       destinations: destinations(tx)
     }
@@ -68,7 +68,7 @@ defimpl Inspect, for: CoinPusher.TransactionInfo do
   def inspect(info, _opts) do
     sources = multiline(info.sources )
     dests = multiline(info.destinations)
-    concat ["tx:\n",
+    concat ["tx: #{info.id}\n",
             "[sources]      #{sources}\n",
             "[destinations] #{dests}"]
   end

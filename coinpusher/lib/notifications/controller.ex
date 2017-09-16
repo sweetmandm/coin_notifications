@@ -17,34 +17,33 @@ defmodule CoinPusher.NotificationsController do
 
   @spec notify_transaction(%RawTransaction{}) :: pid
   def notify_transaction(transaction) do
-    spawn(fn -> send_notifications!(transaction) end)
+    info = TransactionInfo.from(transaction)
+    spawn(fn -> send_notifications!(info) end)
   end
 
   @spec notify_block(%RawBlock{}, integer) :: pid
   def notify_block(block, confirmations) do
-    block.txns
+    block.transaction_infos
     |> Enum.each(&(__MODULE__.send_notifications!(&1, confirmations)))
   end
 
-  @spec send_notifications!(%RawTransaction{}) :: :ok
+  @spec send_notifications!(%TransactionInfo{}) :: :ok
   def send_notifications!(transaction) do
     confirmations = transaction.id |> Blockchain.confirmations_for_transaction
     send_notifications!(transaction, confirmations)
   end
 
-  @spec send_notifications!(%RawTransaction{}, integer) :: :ok
-  def send_notifications!(transaction, confirmations) do
-    info = TransactionInfo.from(transaction)
-
+  @spec send_notifications!(%TransactionInfo{}, integer) :: :ok
+  def send_notifications!(info, confirmations) do
     info.sources |> Enum.each(fn(source) ->
-      send_notifications_for_source!(transaction, source, confirmations)
+      send_notifications_for_source!(info, source, confirmations)
     end)
 
     info.destinations |> Enum.each(fn(dest) ->
-      send_notifications_for_dest!(transaction, dest, confirmations)
+      send_notifications_for_dest!(info, dest, confirmations)
     end)
 
-    AddressListeners.did_notify(info, transaction.id, confirmations)
+    AddressListeners.did_notify(info, info.id, confirmations)
   end
 
   @spec send_notifications_for_source!(%TransactionInfo{}, %{}, integer) :: :ok

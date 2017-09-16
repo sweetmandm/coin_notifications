@@ -1,9 +1,9 @@
 defmodule CoinPusher.RawBlock do
-  alias CoinPusher.{VarInt, DoubleSha256, RawTransaction}
+  alias CoinPusher.{VarInt, DoubleSha256, RawTransaction, TransactionInfo, AddressListeners}
   import CoinPusher.ParseList
   import CoinPusher.ReverseBytes
 
-  defstruct [:id, :version, :prev_block, :merkle_root, :timestamp, :bits, :nonce, :txn_count, :txns]
+  defstruct [:id, :version, :prev_block, :merkle_root, :timestamp, :bits, :nonce, :transaction_infos]
 
   @spec parse(binary) :: {:ok, %CoinPusher.RawBlock{}}
   def parse(data) do
@@ -18,7 +18,12 @@ defmodule CoinPusher.RawBlock do
       rest :: binary>> = data
 
     {:ok, txn_count, rest} = VarInt.parse(rest)
-    {:ok, txns, <<>>} = parse_list(txn_count, rest, &RawTransaction.parse/1)
+    {:ok, infos, <<>>} = parse_list(txn_count, rest, &__MODULE__.parse_transaction_info/1)
+
+    infos = infos
+            |> Enum.filter(fn(info) ->
+              info |> AddressListeners.any_listeners?
+            end)
 
     block = %CoinPusher.RawBlock{
       id: DoubleSha256.to_string(header),
@@ -28,21 +33,21 @@ defmodule CoinPusher.RawBlock do
       timestamp: timestamp,
       bits: bits,
       nonce: nonce,
-      txn_count: txn_count,
-      txns: txns
+      transaction_infos: infos
     }
 
     {:ok, block}
   end
 
-  @spec transaction_ids(%__MODULE__{}) :: list(String.t)
-  def transaction_ids(block) do
-    block.txns |> Enum.map(&(&1.id))
+  @spec parse_transaction_info(binary) :: {:ok, %TransactionInfo{}, binary}
+  def parse_transaction_info(data) do
+    {:ok, tx, rest} = RawTransaction.parse(data)
+    {:ok, TransactionInfo.from(tx), rest}
   end
 
   @spec contains_transaction(%__MODULE__{}, String.t) :: boolean
   def contains_transaction(block, tx_id) do
-    ids = __MODULE__.transaction_ids(block)
+    ids = block.transaction_infos |> Enum.map(&(&1.id))
     Enum.member?(ids, tx_id)
   end
 

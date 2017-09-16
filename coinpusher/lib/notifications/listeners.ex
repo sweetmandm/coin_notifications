@@ -79,14 +79,14 @@ defmodule CoinPusher.AddressListeners do
   end
 
   def did_notify(info, txid, confirmations) do
-    if any_listeners(info) do
+    if any_listeners?(info) do
       Mnesia.transaction(fn ->
         Mnesia.write({TxEvent, txid, confirmations})
       end)
     end
   end
 
-  def any_listeners(info) do
+  def any_listeners?(info) do
     info
     |> TransactionInfo.all_addresses
     |> List.flatten
