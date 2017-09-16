@@ -4,12 +4,19 @@ defmodule CoinPusher.Blockchain do
   @spec handle_receive_block(%RawBlock{}) :: {:ok, pid}
   def handle_receive_block(block) do
     {:ok, linked_block} = BlockchainState.add_block(block)
-    case linked_block |> LinkedBlock.previous do
-      nil ->
-        extend_backward(linked_block, linked_block)
+    tips_count = BlockchainState.get_chain_tips() |> Enum.count
+    case tips_count do
+      1 ->
         {:ok, linked_block}
       _ ->
-        {:ok, linked_block}
+        # With more than one chain tip, attempt to merge with a previous chain.
+        case linked_block |> LinkedBlock.previous do
+          nil ->
+            extend_backward(linked_block, linked_block)
+            {:ok, linked_block}
+          _ ->
+            {:ok, linked_block}
+        end
     end
   end
 
