@@ -24,14 +24,20 @@ defmodule CoinPusher.Blockchain do
   defp extend_backward(tip, tail) do
     block = tail |> LinkedBlock.block
     id = block |> RawBlock.prev_block_id
-    {:ok, previous_block} = RPCEnqueue.get_raw_block(id)
-    {:ok, previous} = BlockchainState.extend_backward(tip, tail, previous_block)
-    previous_id = previous_block |> RawBlock.prev_block_id
-    {result, found_join, _, _}  = BlockchainState.find_block_with_id(previous_id)
-    cond do
-      BlockchainState.chain_length(tip) >= BlockchainState.target_length() -> :ok
-      result == :found -> previous |> LinkedBlock.set_previous(found_join)
-      result == :not_found -> extend_backward(tip, previous)
+    case RPCEnqueue.get_raw_block(id) do
+      {:ok, previous_block} ->
+        {:ok, previous} = BlockchainState.extend_backward(tip, tail, previous_block)
+        previous_id = previous_block |> RawBlock.prev_block_id
+        {result, found_join, _, _}  = BlockchainState.find_block_with_id(previous_id)
+        cond do
+          BlockchainState.chain_length(tip) >= BlockchainState.target_length() -> :ok
+          result == :found -> previous |> LinkedBlock.set_previous(found_join)
+          result == :not_found -> extend_backward(tip, previous)
+        end
+      nil ->
+        # This should be its own Honeydew job so it can use smarter retry
+        #extend_backward(tip, tail)
+        :ok
     end
   end
 
