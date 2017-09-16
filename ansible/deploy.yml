@@ -14,10 +14,9 @@
     - git_checkout
 
 - name: Start bitcoind
-  remote_user: "{{ deployer_user.name }}"
+  remote_user: root
   hosts:
     - nodes
     - dev
-  remote_user: root
   roles:
     - monit_activate

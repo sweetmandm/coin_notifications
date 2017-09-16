@@ -36,22 +36,14 @@ defmodule CoinPusher.ZMQClient do
   end
 
   defp handle(["rawblock", data, _]) do
-    spawn_link(fn ->
-      Logger.debug "received block"
-      :timer.sleep(1000)
-      Logger.debug "parsing block"
-      case RawBlock.parse(data) do
-        {:ok, block} ->
-          Logger.debug "block:\n[hash] #{block.id}"
-	  Logger.debug "waiting block"
-	  :timer.sleep(1000)
-	  Logger.debug "sending to chain"
-          {:ok, new_block} = Blockchain.handle_receive_block(block)
-          notify_all_confirmations(new_block)
-        {:error, reason} ->
-          IO.inspect reason
-      end
-    end)
+    case RawBlock.parse(data) do
+      {:ok, block} ->
+        Logger.debug "block:\n[hash] #{block.id}"
+        {:ok, new_block} = Blockchain.handle_receive_block(block)
+        notify_all_confirmations(new_block)
+      {:error, reason} ->
+        IO.inspect reason
+    end
   end
 
   defp handle(["rawtx", data, _]) do
