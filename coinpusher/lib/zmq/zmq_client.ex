@@ -36,30 +36,10 @@ defmodule CoinPusher.ZMQClient do
   end
 
   defp handle(["rawblock", data, _]) do
-    case RawBlock.parse(data) do
-      {:ok, block} ->
-        Logger.debug "block:\n[hash] #{block.id}"
-        {:ok, new_block} = Blockchain.handle_receive_block(block)
-        notify_all_confirmations(new_block)
-      {:error, reason} ->
-        IO.inspect reason
-    end
+    {:parse, [data]} |> Honeydew.async(:rawblock_parse)
   end
 
   defp handle(["rawtx", data, _]) do
-    case RawTransaction.parse(data) do
-      {:ok, tx, <<>>} ->
-        NotificationsController.notify_transaction(tx)
-      {:error, reason} ->
-        IO.inspect reason
-    end
-  end
-
-  @spec notify_all_confirmations(pid) :: :ok
-  defp notify_all_confirmations(tip) do
-    Blockchain.each_block(tip, fn(block, confirmations) ->
-      raw_block = block |> LinkedBlock.block
-      NotificationsController.notify_block(raw_block, confirmations)
-    end)
-  end
+    {:parse, [data]} |> Honeydew.async(:rawtx_parse)
+  end 
 end
