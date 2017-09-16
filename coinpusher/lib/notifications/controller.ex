@@ -44,7 +44,7 @@ defmodule CoinPusher.NotificationsController do
       send_notifications_for_dest!(transaction, dest, confirmations)
     end)
 
-    AddressListeners.did_notify(transaction.id, confirmations)
+    AddressListeners.did_notify(info, transaction.id, confirmations)
   end
 
   @spec send_notifications_for_source!(%TransactionInfo{}, %{}, integer) :: :ok

@@ -1,5 +1,5 @@
 defmodule CoinPusher.Blockchain do
-  alias CoinPusher.{RawBlock, RPC, LinkedBlock, BlockchainState}
+  alias CoinPusher.{RawBlock, RPCEnqueue, LinkedBlock, BlockchainState}
 
   @spec handle_receive_block(%RawBlock{}) :: {:ok, pid}
   def handle_receive_block(block) do
@@ -17,7 +17,7 @@ defmodule CoinPusher.Blockchain do
   defp extend_backward(tip, tail) do
     block = tail |> LinkedBlock.block
     id = block |> RawBlock.prev_block_id
-    {:ok, previous_block} = RPC.get_raw_block(id)
+    {:ok, previous_block} = RPCEnqueue.get_raw_block(id)
     {:ok, previous} = BlockchainState.extend_backward(tip, tail, previous_block)
     previous_id = previous_block |> RawBlock.prev_block_id
     {result, found_join, _, _}  = BlockchainState.find_block_with_id(previous_id)
@@ -35,7 +35,7 @@ defmodule CoinPusher.Blockchain do
 
   @spec fetch_initial_blocks(integer) :: list(%RawBlock{})
   def fetch_initial_blocks(count) do
-    {:ok, %{"result" => block_hash}} = RPC.get_best_block_hash()
+    {:ok, %{"result" => block_hash}} = RPCEnqueue.get_best_block_hash()
     fetch_blocks(count, block_hash)
   end
 
@@ -45,7 +45,7 @@ defmodule CoinPusher.Blockchain do
       ^count ->
         result
       _ ->
-        {:ok, block} = RPC.get_raw_block(tip_id)
+        {:ok, block} = RPCEnqueue.get_raw_block(tip_id)
         fetch_blocks(count, block |> RawBlock.prev_block_id, [block | result])
     end
   end

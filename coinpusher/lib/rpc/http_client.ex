@@ -21,15 +21,12 @@ defmodule CoinPusher.RPC.HTTPClient do
           {:ok, 200, _headers, body_ref} ->
             {:ok, body} = :hackney.body(body_ref)
             deserialize_response(body)
-	  {:ok, 500, _headers, _body_ref} ->
-            Logger.debug "Encountered 500: #{url} #{method} #{IO.inspect params}"
-            {:error, :internal_server_error}
-	  {:error, :connect_timeout} ->
-            Logger.debug "Connect timed out: #{url} #{method} #{IO.inspect params}"
-            retry(url, method, params, headers, http_method, retry)
-	  {:error, :timeout} ->
-            Logger.debug "Timed out: #{url} #{method} #{IO.inspect params}"
-            retry(url, method, params, headers, http_method, retry)
+          {:ok, 500, _headers, _body_ref} ->
+            Logger.debug "Encountered 500: #{url} #{method} #{inspect params}"
+            nil
+          error ->
+            Logger.debug "Errored: #{inspect error} #{url} #{method} #{inspect params}"
+            nil
         end
     end
   end

@@ -1,5 +1,5 @@
 defmodule CoinPusher.AddressListeners do
-  alias CoinPusher.Contact
+  alias CoinPusher.{Contact, TransactionInfo}
   alias :mnesia, as: Mnesia
 
   @spec init() :: :ok
@@ -34,6 +34,13 @@ defmodule CoinPusher.AddressListeners do
     end)
   end
 
+  @spec lookup(String.t) :: list(%Contact{})
+  def lookup(address) do
+    Mnesia.transaction(fn ->
+      Mnesia.read(AddressContact, address)
+    end)
+  end
+
   @spec lookup(String.t, String.t, integer) :: list(%Contact{})
   def lookup(address, txid, confirmations) do
     if already_notified(txid, confirmations) do
@@ -54,6 +61,7 @@ defmodule CoinPusher.AddressListeners do
         }
       ])
     end)
+
     contacts
     |> List.flatten
     |> Enum.filter(&(&1 |> elem(1) |> Enum.member?(confirmations)))
@@ -70,9 +78,19 @@ defmodule CoinPusher.AddressListeners do
     end
   end
 
-  def did_notify(txid, confirmations) do
-    Mnesia.transaction(fn ->
-      Mnesia.write({TxEvent, txid, confirmations})
-    end)
+  def did_notify(info, txid, confirmations) do
+    if any_listeners(info) do
+      Mnesia.transaction(fn ->
+        Mnesia.write({TxEvent, txid, confirmations})
+      end)
+    end
+  end
+
+  def any_listeners(info) do
+    info
+    |> TransactionInfo.all_addresses
+    |> List.flatten
+    |> Enum.map(&__MODULE__.lookup/1)
+    |> Enum.any?
   end
 end

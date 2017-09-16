@@ -1,5 +1,5 @@
 defmodule CoinPusher.TransactionInfo do
-  alias CoinPusher.{RawTransaction, TxOut, TxIn, TxId, RPC}
+  alias CoinPusher.{RawTransaction, TxOut, TxIn, TxId, RPCEnqueue}
 
   @type address_tx :: %{value: integer, addresses: list(String.t)}
 
@@ -36,17 +36,26 @@ defmodule CoinPusher.TransactionInfo do
     end)
   end
 
+  @spec all_addresses(%__MODULE__{}) :: list(String.t)
+  def all_addresses(info) do
+    info.sources
+    ++ info.destinations
+    |> Enum.map(&(&1[:addresses]))
+  end
+
   def get_full_inputs(tx) do
     tx.tx_in
     |> Enum.reject(&TxIn.is_coinbase?/1)
     |> Enum.map(fn(tx_in) ->
       tx_id = tx_in.previous_output.hash |> TxId.to_string
-      case RPC.get_raw_transaction(tx_id) do
+      case RPCEnqueue.get_raw_transaction(tx_id) do
         {:ok, %{"result" => result}} ->
           {:ok, raw_tx} = result |> Base.decode16(case: :lower)
           {:ok, tx, <<>>} = raw_tx |> RawTransaction.parse
           tx.tx_out |> Enum.at(tx_in.previous_output.index)
         {:error, :internal_server_error} ->
+          []
+        nil ->
           []
       end
     end)
