@@ -18,7 +18,7 @@ defmodule CoinPusher.NotificationsController do
   @spec notify_transaction(%RawTransaction{}) :: pid
   def notify_transaction(transaction) do
     info = TransactionInfo.from(transaction)
-    spawn(fn -> send_notifications!(info) end)
+    send_notifications!(info)
   end
 
   @spec notify_block(%RawBlock{}, integer) :: pid
