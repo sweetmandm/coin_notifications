@@ -36,10 +36,6 @@ defmodule RawBlockSpec do
       expect subject().nonce |> to(eq 0)
     end
 
-    it "parses the txn_count" do
-      expect subject().txn_count |> to(eq 1)
-    end
-
     describe "the previous block hash" do
       let :prev_block do
         <<23, 46, 89, 232, 172, 200, 201, 33, 47, 146, 112, 80, 135, 147, 27, 165,
@@ -59,43 +55,6 @@ defmodule RawBlockSpec do
 
       it "parses the merkle root" do
         expect subject().merkle_root |> to(eq merkle_root())
-      end
-    end
-
-    describe "the transactions" do
-      let :txns do
-        [%CoinPusher.RawTransaction{
-          id: "7ac34411c83ef3a3e45b26b6d9ff3f394f968a924a094bbe7e33717dd6e699f4",
-          version: 2,
-          lock_time: 0,
-          tx_in: [
-            %CoinPusher.TxIn{
-              sequence: 4294967295,
-              signature_script: <<2, 228, 2, 1, 1>>,
-              previous_output: %CoinPusher.OutPoint{
-                hash: <<0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
-                0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0>>,
-                index: 4294967295
-              },
-              witnesses: [<<0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
-                          0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0>>]
-            }
-          ],
-          tx_out: [
-            %CoinPusher.TxOut{pk_script: <<33, 3, 235, 189, 235, 71, 36, 134, 123,
-              24, 8, 52, 203, 255, 190, 103, 38, 204, 249, 98, 105, 188, 110, 3,
-              164, 129, 10, 13, 72, 234, 76, 253, 183, 143, 172>>,
-              value: 312500000},
-            %CoinPusher.TxOut{pk_script: <<106, 36, 170, 33, 169, 237, 226, 246,
-              28, 63, 113, 209, 222, 253, 63, 169, 153, 223, 163, 105, 83, 117, 92,
-              105, 6, 137, 121, 153, 98, 180, 139, 235, 216, 54, 151, 78, 140, 249>>,
-              value: 0}
-          ]
-        }]
-      end
-
-      it "parses the transactions" do
-        expect subject().txns |> to(eq txns())
       end
     end
   end
