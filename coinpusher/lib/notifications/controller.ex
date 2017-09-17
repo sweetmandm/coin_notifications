@@ -52,7 +52,7 @@ defmodule CoinPusher.NotificationsController do
     send_notification!(
       source[:addresses],
       tx.id,
-      "Sending #{value} BTC in tx #{tx.id} with #{confirmations} confirmations",
+      "Sending ₿#{value} in tx #{tx.id} with #{confirmations} confirmations",
       confirmations
     )
   end
@@ -63,7 +63,7 @@ defmodule CoinPusher.NotificationsController do
     send_notification!(
       dest[:addresses],
       tx.id,
-      "Receiving #{value} BTC in tx #{tx.id} with #{confirmations} confirmations",
+      "Receiving ₿#{value} in tx #{tx.id} with #{confirmations} confirmations",
       confirmations
     )
   end
