@@ -1,8 +1,6 @@
 defmodule CoinPusher.ZMQClient do
   require Logger
-  alias CoinPusher.{
-    RawTransaction, RawBlock, NotificationsController, Blockchain, LinkedBlock
-  }
+  alias CoinPusher.NotificationsController
 
   def init(address, port) do
     NotificationsController.init()

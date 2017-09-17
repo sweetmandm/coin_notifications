@@ -8,7 +8,7 @@ defmodule CoinPusher.Application do
       Honeydew.queue_spec(:rpc),
       Honeydew.worker_spec(:rpc, {CoinPusher.RPC, []}, num: 5, init_retry_secs: 4),
       Honeydew.queue_spec(:rawblock_parse),
-      Honeydew.worker_spec(:rawblock_parse, {CoinPusher.ZMQRawBlock, []}, num: 5, init_retry_secs: 4),
+      Honeydew.worker_spec(:rawblock_parse, {CoinPusher.ZMQRawBlock, [Honeydew.FailureMode.Retry]}, num: 5, init_retry_secs: 2),
       Honeydew.queue_spec(:rawtx_parse),
       Honeydew.worker_spec(:rawtx_parse, {CoinPusher.ZMQRawTx, []}, num: 5, init_retry_secs: 4),
       worker(CoinPusher.BlockchainState, [&CoinPusher.Blockchain.fetch_initial_blocks/1]),
