@@ -2,9 +2,7 @@
 
 This application listens for transaction events from `bitcoind`, tracks confirmations, and sends out SMS messages for bitcoin addresses that you're interested in.
 
-It's a working proof-of-concept, but for more reliable 0-transaction notifications (and more timely notifications), it would likely need to connect to several globaly distributed full bitcoin nodes.
-
-Though the PoC sends out SMS, it could just as easily (and more usefully) connect to some other service and allow that service to determine where to send the notification.
+This project will only send notifications for addresses on the receive-side of transactions. It extracts destinations from raw transactions, but the main-net simply seees too many transactions per block to make it viable to get all the inputs over RPC. I think the best way to notify on inputs would be to index all unspent transactions along with precomputed addresses in a database so they can be fetched rapidly, but that's outside the scope of this project.
 
 - Parses raw transactions and blocks from `bitcoind`
 - Extracts addresses from the standard transaction scripts

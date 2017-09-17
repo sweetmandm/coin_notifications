@@ -1,5 +1,5 @@
 defmodule CoinPusher.TransactionInfo do
-  alias CoinPusher.{RawTransaction, TxOut, TxIn, TxId, RPCEnqueue}
+  alias CoinPusher.{RawTransaction, TxOut}
 
   @type address_tx :: %{value: integer, addresses: list(String.t)}
 
@@ -43,23 +43,29 @@ defmodule CoinPusher.TransactionInfo do
     |> Enum.map(&(&1[:addresses]))
   end
 
-  def get_full_inputs(tx) do
-    tx.tx_in
-    |> Enum.reject(&TxIn.is_coinbase?/1)
-    |> Enum.map(fn(tx_in) ->
-      tx_id = tx_in.previous_output.hash |> TxId.to_string
-      case RPCEnqueue.get_raw_transaction(tx_id) do
-        {:ok, %{"result" => result}} ->
-          {:ok, raw_tx} = result |> Base.decode16(case: :lower)
-          {:ok, tx, <<>>} = raw_tx |> RawTransaction.parse
-          tx.tx_out |> Enum.at(tx_in.previous_output.index)
-        {:error, :internal_server_error} ->
-          []
-        nil ->
-          []
-      end
-    end)
-    |> List.flatten
+  def get_full_inputs(_tx) do
+    []
+    # So it turns out making an RPC call for each input will not be fast
+    # enough. This means we cannot determine the transaction input addresses
+    # without some alternate strategy that likely makes this project moot,
+    # such as indexing all blockchain transactions in a database.
+    #
+    # tx.tx_in
+    # |> Enum.reject(&TxIn.is_coinbase?/1)
+    # |> Enum.map(fn(tx_in) ->
+    #   tx_id = tx_in.previous_output.hash |> TxId.to_string
+    #   case CoinPusher.RPC.get_raw_transaction(tx_id) do
+    #     {:ok, %{"result" => result}} ->
+    #       {:ok, raw_tx} = result |> Base.decode16(case: :lower)
+    #       {:ok, tx, <<>>} = raw_tx |> RawTransaction.parse
+    #       tx.tx_out |> Enum.at(tx_in.previous_output.index)
+    #     {:error, :internal_server_error} ->
+    #       []
+    #     _ ->
+    #       []
+    #   end
+    # end)
+    # |> List.flatten
   end
 end
 
