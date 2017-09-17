@@ -2,6 +2,7 @@ defmodule CoinPusher.BlockFactory do
   defmacro __using__(_opts) do
     quote do
       import CoinPusher.ReverseBytes
+      alias CoinPusher.TransactionInfo
 
       def block_factory do
         CoinPusher.RawBlock.parse(build(:block_data)[:data]) |> elem(1)
@@ -28,8 +29,7 @@ defmodule CoinPusher.BlockFactory do
           # Note the merkle root will be wrong after this,
           # unless this is changed to update it.
           %{block |
-            txn_count: tx |> Enum.count,
-            txns: tx
+            transaction_infos: tx |> Enum.map(&TransactionInfo.from/1)
           }
         else
           block

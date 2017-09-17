@@ -8,7 +8,7 @@ defmodule CoinPusher.BlockchainSpec do
   end
 
   let :fetch_func do
-    (fn(count) -> (build(:blockchain) |> with_count(count))[:blocks] end)
+    (fn(_count) -> (build(:blockchain) |> with_count(30))[:blocks] end)
   end
 
   before do

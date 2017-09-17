@@ -7,7 +7,7 @@ defmodule CoinPusher.BlockchainStateSpec do
   def new_block(prev), do: build(:block) |> with_prev(prev)
 
   let :fetch_func do
-    (fn(count) -> (build(:blockchain) |> with_count(count))[:blocks] end)
+    (fn(_count) -> (build(:blockchain) |> with_count(30))[:blocks] end)
   end
   before do
     CoinPusher.BlockchainState.start_link(fetch_func())
