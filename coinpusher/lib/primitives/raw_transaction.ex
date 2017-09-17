@@ -35,7 +35,7 @@ defmodule CoinPusher.RawTransaction do
     tx_in_list =
       case Enum.empty?(witnesses) do
         true -> tx_in_list
-        false -> tx_in_list #add_witnesses_to_tx_in(tx_in_list, witnesses)
+        false -> add_witnesses_to_tx_in(tx_in_list, witnesses)
       end
     unless flags == 0, do: {:error, "unknown flag"}
     <<lock_time :: unsigned-little-32, rest :: binary>> = data
@@ -81,11 +81,7 @@ defmodule CoinPusher.RawTransaction do
   defp add_witnesses_to_tx_in(tx_in_list, witnesses_list, result) do
     [tx_in_head | tx_in_tail] = tx_in_list
     [witnesses_head | witnesses_tail] = witnesses_list
-    result = if Enum.empty?(result) do
-      [%{tx_in_head | witnesses: witnesses_head}]
-    else
-      [result | %{tx_in_head | witnesses: witnesses_head}]
-    end
+    result = result ++ [%{tx_in_head | witnesses: witnesses_head}]
     add_witnesses_to_tx_in(tx_in_tail, witnesses_tail, result)
   end
 
