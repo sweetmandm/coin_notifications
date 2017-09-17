@@ -36,7 +36,9 @@ defmodule CoinPusher.ZMQClient do
   end
 
   defp handle(["rawblock", data, _]) do
-    {:parse, [data]} |> Honeydew.async(:rawblock_parse)
+    Honeydew.suspend(:rawtx_parse)
+    {:parse, [data]} |> Honeydew.async(:rawblock_parse, reply: true) |> Honeydew.yield
+    Honeydew.resume(:rawtx_parse)
   end
 
   defp handle(["rawtx", data, _]) do
