@@ -60,10 +60,11 @@ defmodule CoinPusher.NotificationsController do
   @spec send_notifications_for_dest!(%TransactionInfo{}, %{}, integer) :: :ok
   defp send_notifications_for_dest!(tx, dest, confirmations) do
     value = dest[:value] / @satoshis_per_btc
+    plural = if confirmations == 1, do: "", else: "s"
     send_notification!(
       dest[:addresses],
       tx.id,
-      "Receiving ₿#{value} in tx #{tx.id} with #{confirmations} confirmations",
+      "Receiving ₿#{value}\n#{confirmations} confirmation#{plural}",
       confirmations
     )
   end
@@ -74,7 +75,10 @@ defmodule CoinPusher.NotificationsController do
       case AddressListeners.lookup(address, txid, confirmations) do
         list when is_list(list) ->
           list
-          |> Enum.each(&Contact.notify(&1, message))
+          |> Enum.each(fn(contact) ->
+            message = message <> "\n#{address}"
+            Contact.notify(contact, message)
+          end)
         _ ->
           :no_listeners
       end
