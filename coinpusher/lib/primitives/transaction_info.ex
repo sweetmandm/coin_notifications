@@ -3,13 +3,12 @@ defmodule CoinPusher.TransactionInfo do
 
   @type address_tx :: %{value: integer, addresses: list(String.t)}
 
-  defstruct [:id, :destinations, :sources]
+  defstruct [:id, :destinations]
 
   @spec from(%RawTransaction{}) :: %__MODULE__{}
   def from(tx) do
     %__MODULE__{
       id: tx.id,
-      sources: sources(tx),
       destinations: destinations(tx)
     }
   end
@@ -24,22 +23,9 @@ defmodule CoinPusher.TransactionInfo do
     end)
   end
 
-  @spec sources(%RawTransaction{}) :: address_tx
-  def sources(tx) do
-    tx
-    |> get_full_inputs
-    |> Enum.map(fn(input) ->
-      %{
-        value: input.value,
-        addresses: input |> TxOut.destinations
-      }
-    end)
-  end
-
   @spec all_addresses(%__MODULE__{}) :: list(String.t)
   def all_addresses(info) do
-    info.sources
-    ++ info.destinations
+    info.destinations
     |> Enum.map(&(&1[:addresses]))
   end
 
@@ -72,10 +58,8 @@ end
 defimpl Inspect, for: CoinPusher.TransactionInfo do
   import Inspect.Algebra
   def inspect(info, _opts) do
-    sources = multiline(info.sources )
     dests = multiline(info.destinations)
     concat ["tx: #{info.id}\n",
-            "[sources]      #{sources}\n",
             "[destinations] #{dests}"]
   end
 
