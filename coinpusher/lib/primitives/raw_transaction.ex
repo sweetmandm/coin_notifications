@@ -1,7 +1,6 @@
 defmodule CoinPusher.RawTransaction do
-  alias CoinPusher.{VarInt, TxIn, TxOut, TxId, DoubleSha256}
+  alias CoinPusher.{VarInt, TxIn, TxOut, TxId}
   import CoinPusher.ParseList
-  import Logger
   use Bitwise
   require IEx
 

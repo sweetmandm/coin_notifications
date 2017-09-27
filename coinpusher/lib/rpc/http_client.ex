@@ -7,10 +7,8 @@ defmodule CoinPusher.RPC.HTTPClient do
   @type params :: [json] | %{optional(String.t) => json}
   @type id :: String.t | integer
 
-  @max_retry_count 5
-
-  @spec call(String.t, method, params, any, atom, integer) :: {:ok, any} | {:error, any}
-  def call(url, method, params, headers \\ [], http_method \\ :post, retry \\ 0) do
+  @spec call(String.t, method, params, any, atom) :: {:ok, any} | {:error, any}
+  def call(url, method, params, headers \\ [], http_method \\ :post) do
     case serialized_request(method, params, 0) do
       {:error, :timeout} ->
         call(url, method, params, headers, http_method)
@@ -28,17 +26,6 @@ defmodule CoinPusher.RPC.HTTPClient do
             Logger.debug "Errored: #{inspect error} #{url} #{method} #{inspect params}"
             nil
         end
-    end
-  end
-
-  @spec retry(String.t, method, params, any, atom, integer) :: {:ok, any} | {:error, any}
-  defp retry(url, method, params, headers, http_method, retry) do
-    case retry do
-      @max_retry_count ->
-        {:error, :timeout}
-      _ ->
-        :timer.sleep(1000)
-        call(url, method, params, headers, http_method, retry + 1)
     end
   end
 
