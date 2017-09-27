@@ -161,14 +161,15 @@ defmodule CoinPusher.BlockchainState do
 
   @spec find_block(pid, integer, %MapSet{}, (pid -> boolean)) :: find_block_result
   defp find_block(block, depth, visited, func) when is_pid(block) do
-    id = LinkedBlock.block(block).id
+    block_id = if Process.alive?(block), do: LinkedBlock.block(block).id, else: nil
+
     cond do
+      block_id == nil or MapSet.member?(visited, block_id) ->
+        {:not_found, nil, 0, visited}
       func.(block) ->
         {:found, block, depth, visited}
-      MapSet.member?(visited, id) ->
-        {:not_found, nil, 0, visited}
       true ->
-        visited = MapSet.put(visited, id)
+        visited = MapSet.put(visited, block_id)
         previous = LinkedBlock.previous(block)
         find_block(previous, depth + 1, visited, func)
     end

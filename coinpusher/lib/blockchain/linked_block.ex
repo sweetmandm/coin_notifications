@@ -20,7 +20,10 @@ defmodule CoinPusher.LinkedBlock do
 
   @spec previous(pid) :: node_link
   def previous(agent) do
-    Agent.get(agent, fn(struct) -> struct.previous end)
+    Agent.get(agent, fn(struct) ->
+      prev = struct.previous
+      if is_pid(prev) and Process.alive?(prev), do: prev, else: nil
+    end)
   end
 
   @spec set_previous(pid, node_link) :: :ok
