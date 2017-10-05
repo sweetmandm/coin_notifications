@@ -71,7 +71,6 @@ defmodule CoinPusher.BlockchainState do
   def extend_backward(tip, last, new_last) when is_pid(last) do
     {:ok, previous} = LinkedBlock.start(nil, new_last)
     last |> LinkedBlock.set_previous(previous)
-    trim_chain_from(tip)
     Agent.update(__MODULE__, fn(tips) ->
       needs_recount = Enum.find_index(tips, fn(chain_tip) -> chain_tip.tip == tip end)
       tips = tips |> List.replace_at(

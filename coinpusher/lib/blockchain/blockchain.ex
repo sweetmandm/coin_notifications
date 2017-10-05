@@ -36,8 +36,9 @@ defmodule CoinPusher.Blockchain do
         end
       nil ->
         # This should be its own Honeydew job so it can use smarter retry
-        :timer.sleep(1000)
-        extend_backward(tip, tail)
+        # :timer.sleep(1000)
+        # extend_backward(tip, tail)
+        :ok
     end
   end
 
